@@ -1,4 +1,5 @@
 import AppKit
+import ServiceManagement
 
 @MainActor
 final class StatusBarController: NSObject {
@@ -99,6 +100,14 @@ final class StatusBarController: NSObject {
             )
         )
         menu.addItem(.separator())
+        let loginItem = NSMenuItem(
+            title: "Open at Login",
+            action: #selector(toggleOpenAtLogin),
+            keyEquivalent: ""
+        )
+        loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
+        menu.addItem(loginItem)
+        menu.addItem(.separator())
         menu.addItem(
             NSMenuItem(
                 title: "Quit FocusSlot",
@@ -134,6 +143,27 @@ final class StatusBarController: NSObject {
     @objc private func openLogs() {
         FocusSlotLogger.log("Opening log file")
         NSWorkspace.shared.activateFileViewerSelecting([FocusSlotLogger.logFileURL])
+    }
+
+    @objc private func toggleOpenAtLogin() {
+        let service = SMAppService.mainApp
+        do {
+            if service.status == .enabled {
+                try service.unregister()
+                FocusSlotLogger.log("Disabled open at login")
+            } else {
+                try service.register()
+                FocusSlotLogger.log("Enabled open at login")
+            }
+        } catch {
+            FocusSlotLogger.log("Failed to toggle open at login: \(error.localizedDescription)")
+            let alert = NSAlert()
+            alert.messageText = "Couldn't change login setting"
+            alert.informativeText =
+                "\(error.localizedDescription)\n\nMake sure FocusSlot is in your Applications folder, then try again."
+            alert.alertStyle = .warning
+            alert.runModal()
+        }
     }
 
     @objc private func quit() {

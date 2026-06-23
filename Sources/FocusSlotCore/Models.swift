@@ -73,12 +73,22 @@ public struct TaskDraft: Equatable, Sendable {
     public let category: TaskCategory?
     public let durationMinutes: Int
     public let selectedDate: Date
+    /// Explicit start time chosen by the user. When nil, the task is auto-scheduled
+    /// into the next available slot.
+    public let startDate: Date?
 
-    public init(title: String, category: TaskCategory? = nil, durationMinutes: Int, selectedDate: Date) {
+    public init(
+        title: String,
+        category: TaskCategory? = nil,
+        durationMinutes: Int,
+        selectedDate: Date,
+        startDate: Date? = nil
+    ) {
         self.title = title
         self.category = category
         self.durationMinutes = durationMinutes
         self.selectedDate = selectedDate
+        self.startDate = startDate
     }
 }
 

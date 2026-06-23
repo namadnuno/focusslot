@@ -96,6 +96,8 @@ struct AddTaskPayload: Decodable {
     let category: TaskCategory
     let durationMinutes: Int
     let selectedDate: Date
+    /// Optional explicit start time; absent when the task should be auto-scheduled.
+    let startDate: Date?
 }
 
 struct UpdateTaskPayload: Decodable {

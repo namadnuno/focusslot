@@ -1,8 +1,14 @@
-import { CalendarPlus, Check, Settings } from "lucide-react";
+import { CalendarPlus, Check, Edit3, Plus, Settings } from "lucide-react";
 import { useFocusSlot } from "@/lib/use-focus-slot";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle
+} from "@/components/ui/sheet";
 import { DayFilterControl } from "./day-filter-control";
 import { AccessDenied, Shell } from "./shell";
 import { SettingsPanel } from "./settings-panel";
@@ -25,8 +31,14 @@ export function App() {
     setCategory,
     durationMinutes,
     setDurationMinutes,
+    customTimeEnabled,
+    setCustomTimeEnabled,
+    customStartDate,
+    setCustomStartDate,
     editDraft,
     setEditDraft,
+    isNewTaskOpen,
+    setIsNewTaskOpen,
     dayFilter,
     isCustomDateOpen,
     setIsCustomDateOpen,
@@ -91,60 +103,96 @@ export function App() {
         <SettingsPanel state={state} onChange={updateSettings} />
       ) : (
         <>
-          <section className="min-h-0 flex-1">
+          <section className="flex min-h-0 flex-1 flex-col">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-semibold">Tasks</h2>
               {isBusy && <span className="text-xs text-muted-foreground">Syncing...</span>}
             </div>
-            <TaskList
-              tasks={state.tasks}
-              onEdit={startEditing}
-              onDone={(task) =>
-                runMutation(
-                  "markDone",
-                  { eventID: task.id, selectedDate: selectedDateISO },
-                  "Marked done"
-                )
-              }
-              onMove={(task) =>
-                runMutation(
-                  "moveNext",
-                  { eventID: task.id, selectedDate: selectedDateISO },
-                  "Moved to next slot"
-                )
-              }
-              onDelete={(task) =>
-                runMutation(
-                  "deleteTask",
-                  { eventID: task.id, selectedDate: selectedDateISO },
-                  "Deleted task"
-                )
-              }
-            />
+            <div className="min-h-0 flex-1">
+              <TaskList
+                tasks={state.tasks}
+                onEdit={startEditing}
+                onDone={(task) =>
+                  runMutation(
+                    "markDone",
+                    { eventID: task.id, selectedDate: selectedDateISO },
+                    "Marked done"
+                  )
+                }
+                onMove={(task) =>
+                  runMutation(
+                    "moveNext",
+                    { eventID: task.id, selectedDate: selectedDateISO },
+                    "Moved to next slot"
+                  )
+                }
+                onDelete={(task) =>
+                  runMutation(
+                    "deleteTask",
+                    { eventID: task.id, selectedDate: selectedDateISO },
+                    "Deleted task"
+                  )
+                }
+              />
+            </div>
           </section>
 
-          <Separator className="my-2" />
+          <Button className="w-full" onClick={() => setIsNewTaskOpen(true)}>
+            <Plus className="h-4 w-4" />
+            New task
+          </Button>
 
-          {editDraft ? (
-            <EditTaskForm
-              draft={editDraft}
-              onChange={setEditDraft}
-              onCancel={() => setEditDraft(null)}
-              onSave={saveTask}
-              disabled={isBusy}
-            />
-          ) : (
-            <NewTaskForm
-              title={title}
-              category={category}
-              durationMinutes={durationMinutes}
-              disabled={isBusy}
-              onTitleChange={setTitle}
-              onCategoryChange={setCategory}
-              onDurationChange={setDurationMinutes}
-              onSubmit={addTask}
-            />
-          )}
+          <Sheet
+            open={isNewTaskOpen || editDraft !== null}
+            onOpenChange={(open) => {
+              if (!open) {
+                setIsNewTaskOpen(false);
+                setEditDraft(null);
+              }
+            }}
+          >
+            <SheetContent
+              side="bottom"
+              className="max-h-[92%] gap-0 overflow-y-auto rounded-t-2xl"
+            >
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2.5">
+                  <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary/10 text-primary">
+                    {editDraft ? <Edit3 className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                  </span>
+                  {editDraft ? "Edit task" : "New task"}
+                </SheetTitle>
+                <SheetDescription className="sr-only">
+                  {editDraft ? "Edit an existing task." : "Create a new task."}
+                </SheetDescription>
+              </SheetHeader>
+
+              {editDraft ? (
+                <EditTaskForm
+                  draft={editDraft}
+                  onChange={setEditDraft}
+                  onCancel={() => setEditDraft(null)}
+                  onSave={saveTask}
+                  disabled={isBusy}
+                />
+              ) : (
+                <NewTaskForm
+                  title={title}
+                  category={category}
+                  durationMinutes={durationMinutes}
+                  customTimeEnabled={customTimeEnabled}
+                  customStartDate={customStartDate}
+                  disabled={isBusy}
+                  onTitleChange={setTitle}
+                  onCategoryChange={setCategory}
+                  onDurationChange={setDurationMinutes}
+                  onCustomTimeToggle={setCustomTimeEnabled}
+                  onCustomStartChange={setCustomStartDate}
+                  onSubmit={addTask}
+                />
+              )}
+            </SheetContent>
+          </Sheet>
         </>
       )}
 

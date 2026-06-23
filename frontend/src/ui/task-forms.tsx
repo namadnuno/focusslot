@@ -1,54 +1,68 @@
-import { Edit3, Plus, X } from "lucide-react";
+import { Plus } from "lucide-react";
 import type { TaskCategory } from "@/lib/types";
-import { categories, durations } from "@/lib/types";
+import { durations } from "@/lib/types";
 import type { EditDraft } from "@/lib/use-focus-slot";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { NativeSelect as Select, NativeSelectOption as Option } from "@/components/ui/native-select";
+import { Switch } from "@/components/ui/switch";
+import { CategoryPicker } from "./category-picker";
 
 export function NewTaskForm({
   title,
   category,
   durationMinutes,
+  customTimeEnabled,
+  customStartDate,
   disabled,
   onTitleChange,
   onCategoryChange,
   onDurationChange,
+  onCustomTimeToggle,
+  onCustomStartChange,
   onSubmit
 }: {
   title: string;
   category: TaskCategory;
   durationMinutes: number;
+  customTimeEnabled: boolean;
+  customStartDate: string;
   disabled: boolean;
   onTitleChange: (value: string) => void;
   onCategoryChange: (value: TaskCategory) => void;
   onDurationChange: (value: number) => void;
+  onCustomTimeToggle: (enabled: boolean) => void;
+  onCustomStartChange: (value: string) => void;
   onSubmit: () => void;
 }) {
   return (
-    <Card className="space-y-3 p-4">
-      <div className="flex items-center gap-2">
-        <Plus className="h-4 w-4 text-muted-foreground" />
-        <h2 className="text-sm font-semibold">New task</h2>
-      </div>
+    <div className="space-y-4 px-4 pb-4">
       <Input
-        placeholder="Task title"
+        autoFocus
+        placeholder="What are you working on?"
         value={title}
         onChange={(event) => onTitleChange(event.target.value)}
         onKeyDown={(event) => {
           if (event.key === "Enter") onSubmit();
         }}
       />
-      <div className="grid grid-cols-[1fr_116px] gap-2">
-        <Select value={category} onChange={(event) => onCategoryChange(event.target.value as TaskCategory)}>
-          {categories.map((value) => (
-            <Option key={value} value={value}>
-              {value}
-            </Option>
-          ))}
-        </Select>
-        <Select value={durationMinutes} onChange={(event) => onDurationChange(Number(event.target.value))}>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium text-muted-foreground">Category</Label>
+        <CategoryPicker value={category} onChange={onCategoryChange} />
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="new-task-duration" className="text-xs font-medium text-muted-foreground">
+          Duration
+        </Label>
+        <Select
+          id="new-task-duration"
+          className="w-full"
+          value={durationMinutes}
+          onChange={(event) => onDurationChange(Number(event.target.value))}
+        >
           {durations.map((value) => (
             <Option key={value} value={value}>
               {value}m
@@ -56,11 +70,33 @@ export function NewTaskForm({
           ))}
         </Select>
       </div>
+
+      <div className="space-y-2.5 rounded-lg border p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="space-y-0.5">
+            <Label htmlFor="custom-time" className="text-sm font-normal">
+              Custom time
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              {customTimeEnabled ? "Pick when this task starts." : "Auto-scheduled to the next free slot."}
+            </p>
+          </div>
+          <Switch id="custom-time" checked={customTimeEnabled} onCheckedChange={onCustomTimeToggle} />
+        </div>
+        {customTimeEnabled && (
+          <Input
+            type="datetime-local"
+            value={customStartDate}
+            onChange={(event) => onCustomStartChange(event.target.value)}
+          />
+        )}
+      </div>
+
       <Button className="w-full" disabled={disabled || !title.trim()} onClick={onSubmit}>
         <Plus className="h-4 w-4" />
         Add Task
       </Button>
-    </Card>
+    </div>
   );
 }
 
@@ -78,50 +114,55 @@ export function EditTaskForm({
   onSave: () => void;
 }) {
   return (
-    <Card className="space-y-3 p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Edit3 className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold">Edit task</h2>
-        </div>
-        <Button size="icon" variant="ghost" onClick={onCancel}>
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
+    <div className="space-y-4 px-4 pb-4">
       <Input
+        autoFocus
         value={draft.title}
         onChange={(event) => onChange({ ...draft, title: event.target.value })}
         onKeyDown={(event) => {
           if (event.key === "Enter") onSave();
         }}
       />
-      <div className="grid grid-cols-[1fr_116px] gap-2">
-        <Select
+
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium text-muted-foreground">Category</Label>
+        <CategoryPicker
           value={draft.category}
-          onChange={(event) => onChange({ ...draft, category: event.target.value as TaskCategory })}
-        >
-          {categories.map((value) => (
-            <Option key={value} value={value}>
-              {value}
-            </Option>
-          ))}
-        </Select>
-        <Select
-          value={draft.durationMinutes}
-          onChange={(event) => onChange({ ...draft, durationMinutes: Number(event.target.value) })}
-        >
-          {durations.map((value) => (
-            <Option key={value} value={value}>
-              {value}m
-            </Option>
-          ))}
-        </Select>
+          onChange={(category) => onChange({ ...draft, category })}
+        />
       </div>
-      <Input
-        type="datetime-local"
-        value={draft.startDate}
-        onChange={(event) => onChange({ ...draft, startDate: event.target.value })}
-      />
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="edit-task-duration" className="text-xs font-medium text-muted-foreground">
+            Duration
+          </Label>
+          <Select
+            id="edit-task-duration"
+            className="w-full"
+            value={draft.durationMinutes}
+            onChange={(event) => onChange({ ...draft, durationMinutes: Number(event.target.value) })}
+          >
+            {durations.map((value) => (
+              <Option key={value} value={value}>
+                {value}m
+              </Option>
+            ))}
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="edit-task-start" className="text-xs font-medium text-muted-foreground">
+            Start
+          </Label>
+          <Input
+            id="edit-task-start"
+            type="datetime-local"
+            value={draft.startDate}
+            onChange={(event) => onChange({ ...draft, startDate: event.target.value })}
+          />
+        </div>
+      </div>
+
       <div className="flex gap-2">
         <Button className="flex-1" variant="outline" onClick={onCancel}>
           Cancel
@@ -130,6 +171,6 @@ export function EditTaskForm({
           Save
         </Button>
       </div>
-    </Card>
+    </div>
   );
 }

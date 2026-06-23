@@ -1,7 +1,6 @@
 import { CalendarDays } from "lucide-react";
 import type { DayFilter } from "@/lib/use-focus-slot";
 import { formatDate } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,25 +21,16 @@ export function DayFilterControl({
   onCustomDateSelect: (date: Date) => void;
 }) {
   return (
-    <div className="flex items-center gap-2">
-      <Tabs value={value} onValueChange={onValueChange}>
-        <TabsList className="w-[236px]">
-          <TabsTrigger value="today">Today</TabsTrigger>
-          <TabsTrigger value="tomorrow">Tomorrow</TabsTrigger>
-          <TabsTrigger value="custom">Custom</TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      {value === "custom" && (
+    <Tabs value={value} onValueChange={onValueChange}>
+      <TabsList>
+        <TabsTrigger value="today">Today</TabsTrigger>
+        <TabsTrigger value="tomorrow">Tomorrow</TabsTrigger>
         <Popover open={isCustomDateOpen} onOpenChange={onOpenChange}>
           <PopoverTrigger asChild>
-            <Button
-              className="w-[132px] justify-start text-left font-normal"
-              variant="outline"
-            >
+            <TabsTrigger value="custom" className="gap-1.5">
               <CalendarDays className="h-4 w-4" />
-              {formatDate(selectedDate)}
-            </Button>
+              {value === "custom" ? formatDate(selectedDate) : "Custom"}
+            </TabsTrigger>
           </PopoverTrigger>
           <PopoverContent align="end" className="w-auto p-0">
             <Calendar
@@ -52,7 +42,7 @@ export function DayFilterControl({
             />
           </PopoverContent>
         </Popover>
-      )}
-    </div>
+      </TabsList>
+    </Tabs>
   );
 }

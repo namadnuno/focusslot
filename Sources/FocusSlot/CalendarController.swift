@@ -99,14 +99,20 @@ final class CalendarController: ObservableObject {
 
         await loadEvents(for: draft.selectedDate, settings: settings)
 
-        guard let slot = schedulingService.findBestSlot(
+        let slot: DateInterval
+        if let start = draft.startDate {
+            // Honor the user-chosen start time instead of auto-scheduling.
+            slot = DateInterval(start: start, duration: TimeInterval(draft.durationMinutes * 60))
+        } else if let bestSlot = schedulingService.findBestSlot(
             selectedDate: draft.selectedDate,
             durationMinutes: draft.durationMinutes,
             now: Date(),
             fixedEvents: fixedEvents,
             taskEvents: taskEvents,
             settings: settings
-        ) else {
+        ) {
+            slot = bestSlot
+        } else {
             throw CalendarError.noSlot
         }
 

@@ -1,5 +1,6 @@
 import { Check, Clock, Edit3, MoreHorizontal, RotateCcw, Trash2 } from "lucide-react";
-import type { CalendarTask, TaskCategory } from "@/lib/types";
+import { categoryStyles } from "@/lib/categories";
+import type { CalendarTask } from "@/lib/types";
 import { formatTime } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,14 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-
-const categoryStyles: Record<TaskCategory, string> = {
-  CS: "border-blue-500/20 bg-blue-500/10 text-blue-700 dark:text-blue-300",
-  Bugs: "border-red-500/20 bg-red-500/10 text-red-700 dark:text-red-300",
-  Feature: "border-violet-500/20 bg-violet-500/10 text-violet-700 dark:text-violet-300",
-  Pair: "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
-  Investigation: "border-teal-500/20 bg-teal-500/10 text-teal-700 dark:text-teal-300"
-};
 
 export function TaskList({
   tasks,
@@ -35,7 +28,7 @@ export function TaskList({
 }) {
   if (tasks.length === 0) {
     return (
-      <Card className="grid h-[300px] place-items-center p-6 text-center">
+      <Card className="grid h-full place-items-center p-6 text-center">
         <div>
           <Clock className="mx-auto h-8 w-8 text-muted-foreground" />
           <h3 className="mt-3 text-sm font-medium">No tasks</h3>
@@ -46,7 +39,7 @@ export function TaskList({
   }
 
   return (
-    <div className="h-[300px] space-y-2 overflow-y-auto pr-1">
+    <div className="h-full space-y-2 overflow-y-auto pr-1">
       {tasks.map((task) => (
         <TaskItem
           key={task.id}

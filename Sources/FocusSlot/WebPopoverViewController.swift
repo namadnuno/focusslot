@@ -93,7 +93,8 @@ final class WebPopoverViewController: NSViewController, WKScriptMessageHandler {
                         title: request.title,
                         category: request.category,
                         durationMinutes: request.durationMinutes,
-                        selectedDate: request.selectedDate
+                        selectedDate: request.selectedDate,
+                        startDate: request.startDate
                     ),
                     settings: settingsStore.settings
                 )

@@ -9,6 +9,12 @@ import {
   startOfLocalDayISO
 } from "./utils";
 
+function defaultCustomStart() {
+  const next = new Date();
+  next.setMinutes(next.getMinutes() + 30, 0, 0);
+  return datetimeLocalValue(next);
+}
+
 export type StatusMessage = {
   text: string;
   tone: "success" | "error";
@@ -43,7 +49,10 @@ export function useFocusSlot() {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<TaskCategory>("CS");
   const [durationMinutes, setDurationMinutes] = useState(15);
+  const [customTimeEnabled, setCustomTimeEnabled] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState(defaultCustomStart);
   const [editDraft, setEditDraft] = useState<EditDraft | null>(null);
+  const [isNewTaskOpen, setIsNewTaskOpen] = useState(false);
   const [dayFilter, setDayFilter] = useState<DayFilter>("today");
   const [isCustomDateOpen, setIsCustomDateOpen] = useState(false);
 
@@ -86,19 +95,30 @@ export function useFocusSlot() {
     const trimmedTitle = title.trim();
     if (!trimmedTitle) return;
 
+    const customStart = customTimeEnabled ? fromDatetimeLocalInput(customStartDate) : null;
+    const targetDateISO = customStart ? startOfLocalDayISO(customStart) : selectedDateISO;
+
     const nextState = await runMutation(
       "addTask",
       {
         title: trimmedTitle,
         category,
         durationMinutes,
-        selectedDate: selectedDateISO
+        selectedDate: targetDateISO,
+        ...(customStart ? { startDate: customStart.toISOString() } : {})
       },
       "Task added"
     );
 
     if (nextState) {
       setTitle("");
+      setIsNewTaskOpen(false);
+      setCustomTimeEnabled(false);
+      setCustomStartDate(defaultCustomStart());
+      if (customStart) {
+        setSelectedDate(customStart);
+        setDayFilter(filterForDate(customStart));
+      }
     }
   }
 
@@ -192,8 +212,14 @@ export function useFocusSlot() {
     setCategory,
     durationMinutes,
     setDurationMinutes,
+    customTimeEnabled,
+    setCustomTimeEnabled,
+    customStartDate,
+    setCustomStartDate,
     editDraft,
     setEditDraft,
+    isNewTaskOpen,
+    setIsNewTaskOpen,
     dayFilter,
     isCustomDateOpen,
     setIsCustomDateOpen,
