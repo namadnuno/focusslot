@@ -1,4 +1,4 @@
-import { CalendarPlus, Check, Edit3, Plus, Settings } from "lucide-react";
+import { ArrowRight, CalendarPlus, Check, Edit3, Plus, Settings } from "lucide-react";
 import { useFocusSlot } from "@/lib/use-focus-slot";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import {
 import { DayFilterControl } from "./day-filter-control";
 import { AccessDenied, Shell } from "./shell";
 import { SettingsPanel } from "./settings-panel";
-import { EditTaskForm, NewTaskForm } from "./task-forms";
+import { EditTaskForm, MoveTaskForm, NewTaskForm } from "./task-forms";
 import { TaskList } from "./task-list";
 
 export function App() {
@@ -37,6 +37,9 @@ export function App() {
     setCustomStartDate,
     editDraft,
     setEditDraft,
+    movingTask,
+    setMovingTask,
+    moveTask,
     isNewTaskOpen,
     setIsNewTaskOpen,
     dayFilter,
@@ -132,6 +135,7 @@ export function App() {
                     "Moved to next slot"
                   )
                 }
+                onMoveBy={setMovingTask}
                 onDelete={(task) =>
                   runMutation(
                     "deleteTask",
@@ -149,11 +153,12 @@ export function App() {
           </Button>
 
           <Sheet
-            open={isNewTaskOpen || editDraft !== null}
+            open={isNewTaskOpen || editDraft !== null || movingTask !== null}
             onOpenChange={(open) => {
               if (!open) {
                 setIsNewTaskOpen(false);
                 setEditDraft(null);
+                setMovingTask(null);
               }
             }}
           >
@@ -164,16 +169,33 @@ export function App() {
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2.5">
                   <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary/10 text-primary">
-                    {editDraft ? <Edit3 className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                    {movingTask ? (
+                      <ArrowRight className="h-4 w-4" />
+                    ) : editDraft ? (
+                      <Edit3 className="h-4 w-4" />
+                    ) : (
+                      <Plus className="h-4 w-4" />
+                    )}
                   </span>
-                  {editDraft ? "Edit task" : "New task"}
+                  {movingTask ? "Move task" : editDraft ? "Edit task" : "New task"}
                 </SheetTitle>
                 <SheetDescription className="sr-only">
-                  {editDraft ? "Edit an existing task." : "Create a new task."}
+                  {movingTask
+                    ? "Shift a task to a later time."
+                    : editDraft
+                      ? "Edit an existing task."
+                      : "Create a new task."}
                 </SheetDescription>
               </SheetHeader>
 
-              {editDraft ? (
+              {movingTask ? (
+                <MoveTaskForm
+                  task={movingTask}
+                  disabled={isBusy}
+                  onMove={(option) => moveTask(movingTask, option)}
+                  onCancel={() => setMovingTask(null)}
+                />
+              ) : editDraft ? (
                 <EditTaskForm
                   draft={editDraft}
                   onChange={setEditDraft}

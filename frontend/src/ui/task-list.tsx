@@ -1,4 +1,4 @@
-import { Check, Clock, Edit3, MoreHorizontal, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowRight, Check, Clock, Edit3, MoreHorizontal, RotateCcw, Trash2 } from "lucide-react";
 import { categoryStyles } from "@/lib/categories";
 import type { CalendarTask } from "@/lib/types";
 import { formatTime } from "@/lib/utils";
@@ -18,12 +18,14 @@ export function TaskList({
   onEdit,
   onDone,
   onMove,
+  onMoveBy,
   onDelete
 }: {
   tasks: CalendarTask[];
   onEdit: (task: CalendarTask) => void;
   onDone: (task: CalendarTask) => void;
   onMove: (task: CalendarTask) => void;
+  onMoveBy: (task: CalendarTask) => void;
   onDelete: (task: CalendarTask) => void;
 }) {
   if (tasks.length === 0) {
@@ -47,6 +49,7 @@ export function TaskList({
           onEdit={onEdit}
           onDone={onDone}
           onMove={onMove}
+          onMoveBy={onMoveBy}
           onDelete={onDelete}
         />
       ))}
@@ -59,12 +62,14 @@ function TaskItem({
   onEdit,
   onDone,
   onMove,
+  onMoveBy,
   onDelete
 }: {
   task: CalendarTask;
   onEdit: (task: CalendarTask) => void;
   onDone: (task: CalendarTask) => void;
   onMove: (task: CalendarTask) => void;
+  onMoveBy: (task: CalendarTask) => void;
   onDelete: (task: CalendarTask) => void;
 }) {
   const start = new Date(task.startDate);
@@ -103,6 +108,10 @@ function TaskItem({
             <DropdownMenuItem onSelect={() => onMove(task)}>
               <RotateCcw className="h-4 w-4" />
               Next slot
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onMoveBy(task)}>
+              <ArrowRight className="h-4 w-4" />
+              Move…
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onSelect={() => onDelete(task)}>

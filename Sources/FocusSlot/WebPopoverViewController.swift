@@ -126,6 +126,15 @@ final class WebPopoverViewController: NSViewController, WKScriptMessageHandler {
                     settings: settingsStore.settings
                 )
                 try sendSuccess(id: id, result: appState(selectedDate: request.selectedDate))
+            case "moveTask":
+                let request = try decode(MoveTaskPayload.self, from: payload)
+                _ = try await calendarController.moveTask(
+                    eventID: request.eventID,
+                    offsetMinutes: request.offsetMinutes,
+                    nextDay: request.nextDay,
+                    settings: settingsStore.settings
+                )
+                try sendSuccess(id: id, result: appState(selectedDate: request.selectedDate))
             case "deleteTask":
                 let request = try decode(EventActionPayload.self, from: payload)
                 try await calendarController.delete(

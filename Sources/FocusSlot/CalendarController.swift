@@ -226,6 +226,36 @@ final class CalendarController: ObservableObject {
         return slot
     }
 
+    /// Shifts a task by a fixed offset (or to the next day, preserving time of day).
+    /// Returns the day the task now starts on, so the UI can follow it.
+    @discardableResult
+    func moveTask(
+        eventID: String,
+        offsetMinutes: Int,
+        nextDay: Bool,
+        settings: SchedulingSettings
+    ) async throws -> Date {
+        guard let event = eventStore.event(withIdentifier: eventID) else {
+            throw CalendarError.eventNotFound
+        }
+
+        let duration = event.endDate.timeIntervalSince(event.startDate)
+        let newStart: Date
+        if nextDay {
+            newStart = Calendar.current.date(byAdding: .day, value: 1, to: event.startDate)
+                ?? event.startDate.addingTimeInterval(86_400)
+        } else {
+            newStart = event.startDate.addingTimeInterval(TimeInterval(offsetMinutes * 60))
+        }
+
+        event.startDate = newStart
+        event.endDate = newStart.addingTimeInterval(duration)
+        // Relative alarms move with the event automatically.
+        try eventStore.save(event, span: .thisEvent, commit: true)
+        await loadEvents(for: newStart, settings: settings)
+        return newStart
+    }
+
     func delete(eventID: String, selectedDate: Date, settings: SchedulingSettings) async throws {
         guard let event = eventStore.event(withIdentifier: eventID) else {
             throw CalendarError.eventNotFound

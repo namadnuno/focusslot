@@ -30,6 +30,9 @@ export type EditDraft = {
 
 export type DayFilter = "today" | "tomorrow" | "custom";
 
+/** How far to shift a task: minutes forward, or to the next day. */
+export type MoveOption = 15 | 30 | 60 | 120 | 180 | "nextDay";
+
 export function filterForDate(date: Date): DayFilter {
   const today = new Date();
   const tomorrow = addDays(today, 1);
@@ -52,6 +55,7 @@ export function useFocusSlot() {
   const [customTimeEnabled, setCustomTimeEnabled] = useState(false);
   const [customStartDate, setCustomStartDate] = useState(defaultCustomStart);
   const [editDraft, setEditDraft] = useState<EditDraft | null>(null);
+  const [movingTask, setMovingTask] = useState<CalendarTask | null>(null);
   const [isNewTaskOpen, setIsNewTaskOpen] = useState(false);
   const [dayFilter, setDayFilter] = useState<DayFilter>("today");
   const [isCustomDateOpen, setIsCustomDateOpen] = useState(false);
@@ -150,6 +154,32 @@ export function useFocusSlot() {
     }
   }
 
+  async function moveTask(task: CalendarTask, option: MoveOption) {
+    const nextDay = option === "nextDay";
+    const offsetMinutes = nextDay ? 0 : option;
+    const currentStart = new Date(task.startDate);
+    const newStart = nextDay
+      ? addDays(currentStart, 1)
+      : new Date(currentStart.getTime() + offsetMinutes * 60_000);
+
+    const nextState = await runMutation(
+      "moveTask",
+      {
+        eventID: task.id,
+        offsetMinutes,
+        nextDay,
+        selectedDate: startOfLocalDayISO(newStart)
+      },
+      "Task moved"
+    );
+
+    if (nextState) {
+      setSelectedDate(newStart);
+      setDayFilter(filterForDate(newStart));
+      setMovingTask(null);
+    }
+  }
+
   async function applyReminderToExisting() {
     await runMutation(
       "applyReminderToExisting",
@@ -226,6 +256,9 @@ export function useFocusSlot() {
     setCustomStartDate,
     editDraft,
     setEditDraft,
+    movingTask,
+    setMovingTask,
+    moveTask,
     isNewTaskOpen,
     setIsNewTaskOpen,
     dayFilter,

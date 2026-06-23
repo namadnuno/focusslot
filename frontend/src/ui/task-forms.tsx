@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { Plus } from "lucide-react";
-import type { TaskCategory } from "@/lib/types";
+import type { CalendarTask, TaskCategory } from "@/lib/types";
 import { durations } from "@/lib/types";
-import type { EditDraft } from "@/lib/use-focus-slot";
+import type { EditDraft, MoveOption } from "@/lib/use-focus-slot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -96,6 +97,58 @@ export function NewTaskForm({
         <Plus className="h-4 w-4" />
         Add Task
       </Button>
+    </div>
+  );
+}
+
+const MOVE_OPTIONS: { label: string; value: string }[] = [
+  { label: "15 minutes", value: "15" },
+  { label: "30 minutes", value: "30" },
+  { label: "1 hour", value: "60" },
+  { label: "2 hours", value: "120" },
+  { label: "3 hours", value: "180" },
+  { label: "Next day", value: "nextDay" }
+];
+
+export function MoveTaskForm({
+  task,
+  disabled,
+  onMove,
+  onCancel
+}: {
+  task: CalendarTask;
+  disabled: boolean;
+  onMove: (option: MoveOption) => void;
+  onCancel: () => void;
+}) {
+  const [value, setValue] = useState("30");
+
+  return (
+    <div className="space-y-4 px-4 pb-4">
+      <p className="text-sm text-muted-foreground">
+        Move <span className="font-medium text-foreground">{task.displayTitle}</span> forward by:
+      </p>
+
+      <Select className="w-full" value={value} onChange={(event) => setValue(event.target.value)}>
+        {MOVE_OPTIONS.map((option) => (
+          <Option key={option.value} value={option.value}>
+            {option.label}
+          </Option>
+        ))}
+      </Select>
+
+      <div className="flex gap-2">
+        <Button className="flex-1" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button
+          className="flex-1"
+          disabled={disabled}
+          onClick={() => onMove(value === "nextDay" ? "nextDay" : (Number(value) as MoveOption))}
+        >
+          Move
+        </Button>
+      </div>
     </div>
   );
 }

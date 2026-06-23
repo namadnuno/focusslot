@@ -114,6 +114,13 @@ struct EventActionPayload: Decodable {
     let selectedDate: Date
 }
 
+struct MoveTaskPayload: Decodable {
+    let eventID: String
+    let offsetMinutes: Int
+    let nextDay: Bool
+    let selectedDate: Date
+}
+
 struct UpdateSettingsPayload: Decodable {
     let settings: SchedulingSettings
     let selectedDate: Date
