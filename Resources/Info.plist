@@ -6,6 +6,8 @@
     <string>en</string>
     <key>CFBundleExecutable</key>
     <string>FocusSlot</string>
+    <key>CFBundleIconFile</key>
+    <string>FocusSlot</string>
     <key>CFBundleIdentifier</key>
     <string>com.local.FocusSlot</string>
     <key>CFBundleInfoDictionaryVersion</key>

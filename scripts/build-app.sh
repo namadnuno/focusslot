@@ -19,6 +19,11 @@ mkdir -p "$APP_DIR/Contents/Resources"
 cp "$BIN_DIR/FocusSlot" "$APP_DIR/Contents/MacOS/FocusSlot"
 cp "Resources/Info.plist" "$APP_DIR/Contents/Info.plist"
 cp -R "frontend/dist" "$APP_DIR/Contents/Resources/frontend"
+
+if [ -f "Resources/FocusSlot.icns" ]; then
+  cp "Resources/FocusSlot.icns" "$APP_DIR/Contents/Resources/FocusSlot.icns"
+fi
+
 codesign --force --deep --sign - "$APP_DIR"
 
 echo "Built $APP_DIR"
