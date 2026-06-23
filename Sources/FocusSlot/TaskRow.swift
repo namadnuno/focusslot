@@ -3,6 +3,7 @@ import SwiftUI
 
 struct TaskRow: View {
     enum Action {
+        case edit
         case markDone
         case moveNext
         case delete
@@ -16,15 +17,21 @@ struct TaskRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 10) {
-            Circle()
-                .fill(TaskTitleFormatter.isDone(event.title) ? Color.green : Color.accentColor)
-                .frame(width: 8, height: 8)
+        HStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: 3)
+                .fill(categoryColor)
+                .frame(width: 5)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(TaskTitleFormatter.displayTitle(for: event.title))
-                    .font(.callout)
-                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    if let category = TaskTitleFormatter.category(for: event.title) {
+                        CategoryBadge(category: category)
+                    }
+
+                    Text(TaskTitleFormatter.displayTitle(for: event.title))
+                        .font(.callout.weight(.medium))
+                        .lineLimit(1)
+                }
 
                 Text("\(event.startDate.formatted(date: .omitted, time: .shortened)) - \(event.endDate.formatted(date: .omitted, time: .shortened))")
                     .font(.caption)
@@ -38,6 +45,10 @@ struct TaskRow: View {
                 .foregroundStyle(.secondary)
 
             Menu {
+                Button("Edit") {
+                    onAction(.edit)
+                }
+
                 Button("Mark Done") {
                     onAction(.markDone)
                 }
@@ -54,13 +65,66 @@ struct TaskRow: View {
                 }
             } label: {
                 Image(systemName: "ellipsis.circle")
+                    .font(.system(size: 15))
             }
             .menuStyle(.button)
             .buttonStyle(.borderless)
             .frame(width: 24)
         }
-        .padding(.vertical, 7)
-        .padding(.horizontal, 8)
-        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+        .padding(10)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(Color.primary.opacity(0.06))
+        }
+    }
+
+    private var categoryColor: Color {
+        if TaskTitleFormatter.isDone(event.title) {
+            return .green
+        }
+
+        switch TaskTitleFormatter.category(for: event.title) {
+        case .cs:
+            return .blue
+        case .bugs:
+            return .red
+        case .feature:
+            return .purple
+        case .pair:
+            return .orange
+        case .investigation:
+            return .teal
+        case nil:
+            return .accentColor
+        }
+    }
+}
+
+struct CategoryBadge: View {
+    let category: TaskCategory
+
+    var body: some View {
+        Text(category.rawValue)
+            .font(.caption2.weight(.semibold))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .foregroundStyle(color)
+            .background(color.opacity(0.12), in: Capsule())
+    }
+
+    private var color: Color {
+        switch category {
+        case .cs:
+            return .blue
+        case .bugs:
+            return .red
+        case .feature:
+            return .purple
+        case .pair:
+            return .orange
+        case .investigation:
+            return .teal
+        }
     }
 }

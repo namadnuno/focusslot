@@ -70,11 +70,13 @@ public struct CalendarEvent: Equatable, Sendable, Identifiable {
 
 public struct TaskDraft: Equatable, Sendable {
     public let title: String
+    public let category: TaskCategory?
     public let durationMinutes: Int
     public let selectedDate: Date
 
-    public init(title: String, durationMinutes: Int, selectedDate: Date) {
+    public init(title: String, category: TaskCategory? = nil, durationMinutes: Int, selectedDate: Date) {
         self.title = title
+        self.category = category
         self.durationMinutes = durationMinutes
         self.selectedDate = selectedDate
     }

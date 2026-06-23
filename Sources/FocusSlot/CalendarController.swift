@@ -116,13 +116,36 @@ final class CalendarController: ObservableObject {
 
         let event = EKEvent(eventStore: eventStore)
         event.calendar = targetCalendar
-        event.title = TaskTitleFormatter.eventTitle(for: title)
+        event.title = TaskTitleFormatter.eventTitle(for: title, category: draft.category)
         event.startDate = slot.start
         event.endDate = slot.end
 
         try eventStore.save(event, span: .thisEvent, commit: true)
         await loadEvents(for: draft.selectedDate, settings: settings)
         return slot
+    }
+
+    func updateTask(
+        eventID: String,
+        title: String,
+        category: TaskCategory?,
+        startDate: Date,
+        durationMinutes: Int,
+        settings: SchedulingSettings
+    ) async throws {
+        let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanTitle.isEmpty else { throw CalendarError.emptyTitle }
+        guard durationMinutes > 0 else { throw CalendarError.noSlot }
+        guard let event = eventStore.event(withIdentifier: eventID) else {
+            throw CalendarError.eventNotFound
+        }
+
+        event.title = TaskTitleFormatter.eventTitle(for: cleanTitle, category: category)
+        event.startDate = startDate
+        event.endDate = startDate.addingTimeInterval(TimeInterval(durationMinutes * 60))
+
+        try eventStore.save(event, span: .thisEvent, commit: true)
+        await loadEvents(for: startDate, settings: settings)
     }
 
     func markDone(eventID: String, selectedDate: Date, settings: SchedulingSettings) async throws {

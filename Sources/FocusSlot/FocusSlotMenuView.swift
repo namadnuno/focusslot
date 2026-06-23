@@ -8,14 +8,20 @@ struct FocusSlotMenuView: View {
 
     @State private var selectedDate = Date()
     @State private var taskTitle = ""
+    @State private var selectedCategory: TaskCategory = .cs
     @State private var durationMinutes = 15
     @State private var statusMessage: StatusMessage?
     @State private var showsSettings = false
+    @State private var editingEventID: String?
+    @State private var editTitle = ""
+    @State private var editCategory: TaskCategory = .cs
+    @State private var editStartDate = Date()
+    @State private var editDurationMinutes = 15
 
     private let durations = [5, 10, 15, 20, 30, 45, 60, 90, 120]
 
     var body: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 16) {
             header
 
             switch calendarController.accessState {
@@ -44,7 +50,17 @@ struct FocusSlotMenuView: View {
                 }
             }
         }
-        .padding(16)
+        .padding(18)
+        .background {
+            LinearGradient(
+                colors: [
+                    Color(nsColor: .windowBackgroundColor),
+                    Color(nsColor: .controlBackgroundColor)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        }
         .task {
             await calendarController.start(settings: settingsStore.settings, selectedDate: selectedDate)
 
@@ -67,11 +83,11 @@ struct FocusSlotMenuView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text("FocusSlot")
-                    .font(.headline)
-                Text(selectedDate.formatted(date: .abbreviated, time: .omitted))
+                    .font(.system(size: 20, weight: .semibold, design: .rounded))
+                Text("\(calendarController.taskEvents.count) tasks on \(selectedDate.formatted(date: .abbreviated, time: .omitted))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -87,8 +103,11 @@ struct FocusSlotMenuView: View {
                 showsSettings.toggle()
             } label: {
                 Image(systemName: showsSettings ? "checkmark" : "gearshape")
+                    .font(.system(size: 15, weight: .semibold))
+                    .frame(width: 28, height: 28)
             }
             .buttonStyle(.borderless)
+            .background(.regularMaterial, in: Circle())
             .help(showsSettings ? "Done" : "Settings")
         }
     }
@@ -97,9 +116,11 @@ struct FocusSlotMenuView: View {
         VStack(alignment: .leading, spacing: 14) {
             taskList
 
-            Divider()
-
-            newTaskForm
+            if editingEventID == nil {
+                newTaskForm
+            } else {
+                editTaskForm
+            }
 
             if let statusMessage {
                 Text(statusMessage.text)
@@ -111,10 +132,10 @@ struct FocusSlotMenuView: View {
     }
 
     private var taskList: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("Tasks")
-                    .font(.subheadline.weight(.semibold))
+                    .font(.headline)
                 Spacer()
                 if calendarController.isLoading {
                     ProgressView()
@@ -141,19 +162,32 @@ struct FocusSlotMenuView: View {
                         }
                     }
                 }
-                .frame(height: 250)
+                .frame(height: 275)
             }
         }
     }
 
     private var newTaskForm: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("New task")
-                .font(.subheadline.weight(.semibold))
+        VStack(alignment: .leading, spacing: 12) {
+            formHeader(title: "New task", systemImage: "plus.circle")
 
             TextField("Task title", text: $taskTitle)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit(addTask)
+
+            HStack {
+                Text("Category")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Picker("Category", selection: $selectedCategory) {
+                    ForEach(TaskCategory.allCases) { category in
+                        Text(category.rawValue).tag(category)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .frame(width: 160)
+            }
 
             HStack {
                 Picker("Duration", selection: $durationMinutes) {
@@ -173,13 +207,89 @@ struct FocusSlotMenuView: View {
                 }
                 .keyboardShortcut(.return, modifiers: .command)
                 .disabled(taskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .buttonStyle(.borderedProminent)
             }
+        }
+        .padding(14)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(Color.primary.opacity(0.06))
+        }
+    }
+
+    private var editTaskForm: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            formHeader(title: "Edit task", systemImage: "slider.horizontal.3")
+
+            TextField("Task title", text: $editTitle)
+                .textFieldStyle(.roundedBorder)
+                .onSubmit(saveEditedTask)
+
+            HStack {
+                Text("Category")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Picker("Category", selection: $editCategory) {
+                    ForEach(TaskCategory.allCases) { category in
+                        Text(category.rawValue).tag(category)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .frame(width: 160)
+            }
+
+            HStack {
+                DatePicker("Start", selection: $editStartDate, displayedComponents: [.date, .hourAndMinute])
+                    .datePickerStyle(.compact)
+
+                Picker("Duration", selection: $editDurationMinutes) {
+                    ForEach(durations, id: \.self) { minutes in
+                        Text("\(minutes)m").tag(minutes)
+                    }
+                }
+                .pickerStyle(.menu)
+                .frame(width: 105)
+            }
+
+            HStack {
+                Button("Cancel") {
+                    clearEditing()
+                }
+
+                Spacer()
+
+                Button {
+                    saveEditedTask()
+                } label: {
+                    Label("Save", systemImage: "checkmark")
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(editTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .padding(14)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(Color.primary.opacity(0.06))
+        }
+    }
+
+    private func formHeader(title: String, systemImage: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: systemImage)
+                .foregroundStyle(.secondary)
+            Text(title)
+                .font(.headline)
         }
     }
 
     private func addTask() {
         let draft = TaskDraft(
             title: taskTitle,
+            category: selectedCategory,
             durationMinutes: durationMinutes,
             selectedDate: selectedDate
         )
@@ -201,6 +311,8 @@ struct FocusSlotMenuView: View {
     private func handleTaskAction(_ action: TaskRow.Action, event: CalendarEvent) async {
         do {
             switch action {
+            case .edit:
+                startEditing(event)
             case .markDone:
                 try await calendarController.markDone(
                     eventID: event.id,
@@ -228,6 +340,45 @@ struct FocusSlotMenuView: View {
             }
         } catch {
             statusMessage = StatusMessage(text: error.localizedDescription, isError: true)
+        }
+    }
+
+    private func startEditing(_ event: CalendarEvent) {
+        editingEventID = event.id
+        editTitle = TaskTitleFormatter.displayTitle(for: event.title)
+        editCategory = TaskTitleFormatter.category(for: event.title) ?? .cs
+        editStartDate = event.startDate
+        editDurationMinutes = max(5, Int(event.endDate.timeIntervalSince(event.startDate) / 60))
+        statusMessage = nil
+    }
+
+    private func clearEditing() {
+        editingEventID = nil
+        editTitle = ""
+        editCategory = .cs
+        editStartDate = Date()
+        editDurationMinutes = 15
+    }
+
+    private func saveEditedTask() {
+        guard let editingEventID else { return }
+
+        Task {
+            do {
+                try await calendarController.updateTask(
+                    eventID: editingEventID,
+                    title: editTitle,
+                    category: editCategory,
+                    startDate: editStartDate,
+                    durationMinutes: editDurationMinutes,
+                    settings: settingsStore.settings
+                )
+                selectedDate = editStartDate
+                clearEditing()
+                statusMessage = StatusMessage(text: "Updated task", isError: false)
+            } catch {
+                statusMessage = StatusMessage(text: error.localizedDescription, isError: true)
+            }
         }
     }
 

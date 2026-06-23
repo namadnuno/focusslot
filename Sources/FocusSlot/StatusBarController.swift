@@ -35,10 +35,10 @@ final class StatusBarController: NSObject {
         let rootView = FocusSlotMenuView()
             .environmentObject(calendarController)
             .environmentObject(settingsStore)
-            .frame(width: 400, height: 580)
+            .frame(width: 430, height: 640)
 
         popover.behavior = .transient
-        popover.contentSize = NSSize(width: 400, height: 580)
+        popover.contentSize = NSSize(width: 430, height: 640)
         popover.contentViewController = NSHostingController(rootView: rootView)
     }
 
