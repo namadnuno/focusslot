@@ -150,6 +150,14 @@ export function useFocusSlot() {
     }
   }
 
+  async function applyReminderToExisting() {
+    await runMutation(
+      "applyReminderToExisting",
+      { selectedDate: selectedDateISO },
+      "Reminder applied to upcoming tasks"
+    );
+  }
+
   async function updateSettings(settings: SchedulingSettings) {
     await runMutation(
       "updateSettings",
@@ -227,6 +235,7 @@ export function useFocusSlot() {
     runMutation,
     addTask,
     saveTask,
+    applyReminderToExisting,
     updateSettings,
     startEditing,
     selectDate

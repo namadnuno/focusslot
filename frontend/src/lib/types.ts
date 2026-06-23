@@ -24,6 +24,7 @@ export type SchedulingSettings = {
   slotGranularityMinutes: number;
   calendarIdentifier: string | null;
   autoRebalance: boolean;
+  reminderMinutes: number | null;
 };
 
 export type CalendarTask = {

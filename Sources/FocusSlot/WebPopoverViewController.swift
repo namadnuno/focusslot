@@ -139,6 +139,14 @@ final class WebPopoverViewController: NSViewController, WKScriptMessageHandler {
                 settingsStore.settings = request.settings
                 await calendarController.loadEvents(for: request.selectedDate, settings: settingsStore.settings)
                 try sendSuccess(id: id, result: appState(selectedDate: request.selectedDate))
+            case "applyReminderToExisting":
+                let request = try decode(SelectedDatePayload.self, from: payload)
+                let count = try await calendarController.applyReminderToExistingTasks(
+                    settings: settingsStore.settings
+                )
+                FocusSlotLogger.log("Applied reminder to \(count) existing tasks")
+                await calendarController.loadEvents(for: request.selectedDate, settings: settingsStore.settings)
+                try sendSuccess(id: id, result: appState(selectedDate: request.selectedDate))
             case "openCalendarSettings":
                 openCalendarSettings()
                 try sendSuccess(id: id, result: EmptyResult())

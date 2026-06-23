@@ -13,6 +13,9 @@ public struct SchedulingSettings: Codable, Equatable, Sendable {
     public var slotGranularityMinutes: Int
     public var calendarIdentifier: String?
     public var autoRebalance: Bool
+    /// Minutes before a task's start to fire a calendar alert.
+    /// nil = no reminder, 0 = at start time, >0 = that many minutes before.
+    public var reminderMinutes: Int?
 
     public init(
         workdayStartHour: Int = 9,
@@ -26,7 +29,8 @@ public struct SchedulingSettings: Codable, Equatable, Sendable {
         bufferMinutes: Int = 5,
         slotGranularityMinutes: Int = 5,
         calendarIdentifier: String? = nil,
-        autoRebalance: Bool = false
+        autoRebalance: Bool = false,
+        reminderMinutes: Int? = nil
     ) {
         self.workdayStartHour = workdayStartHour
         self.workdayStartMinute = workdayStartMinute
@@ -40,6 +44,7 @@ public struct SchedulingSettings: Codable, Equatable, Sendable {
         self.slotGranularityMinutes = slotGranularityMinutes
         self.calendarIdentifier = calendarIdentifier
         self.autoRebalance = autoRebalance
+        self.reminderMinutes = reminderMinutes
     }
 }
 

@@ -46,6 +46,7 @@ export function App() {
     runMutation,
     addTask,
     saveTask,
+    applyReminderToExisting,
     updateSettings,
     startEditing,
     selectDate,
@@ -100,7 +101,12 @@ export function App() {
       {state.accessState.status === "denied" ? (
         <AccessDenied message={state.accessState.message} onRetry={() => refresh("initialize")} />
       ) : isSettingsOpen ? (
-        <SettingsPanel state={state} onChange={updateSettings} />
+        <SettingsPanel
+          state={state}
+          disabled={isBusy}
+          onChange={updateSettings}
+          onApplyReminderToExisting={applyReminderToExisting}
+        />
       ) : (
         <>
           <section className="flex min-h-0 flex-1 flex-col">

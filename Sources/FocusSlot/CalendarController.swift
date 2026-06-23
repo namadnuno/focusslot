@@ -125,6 +125,7 @@ final class CalendarController: ObservableObject {
         event.title = TaskTitleFormatter.eventTitle(for: title, category: draft.category)
         event.startDate = slot.start
         event.endDate = slot.end
+        applyReminder(to: event, settings: settings)
 
         try eventStore.save(event, span: .thisEvent, commit: true)
         await loadEvents(for: draft.selectedDate, settings: settings)
@@ -149,9 +150,42 @@ final class CalendarController: ObservableObject {
         event.title = TaskTitleFormatter.eventTitle(for: cleanTitle, category: category)
         event.startDate = startDate
         event.endDate = startDate.addingTimeInterval(TimeInterval(durationMinutes * 60))
+        applyReminder(to: event, settings: settings)
 
         try eventStore.save(event, span: .thisEvent, commit: true)
         await loadEvents(for: startDate, settings: settings)
+    }
+
+    /// Replaces the event's alarms to match the configured reminder setting.
+    private func applyReminder(to event: EKEvent, settings: SchedulingSettings) {
+        event.alarms = nil
+        if let minutes = settings.reminderMinutes {
+            event.alarms = [EKAlarm(relativeOffset: TimeInterval(-minutes * 60))]
+        }
+    }
+
+    /// Applies the current reminder setting to existing upcoming task events
+    /// (from the start of today forward). Returns the number of tasks updated.
+    @discardableResult
+    func applyReminderToExistingTasks(settings: SchedulingSettings) async throws -> Int {
+        guard accessState == .granted else { throw CalendarError.missingCalendar }
+        guard let targetCalendar = selectedCalendar(settings: settings) else {
+            throw CalendarError.missingCalendar
+        }
+
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: Date())
+        let end = calendar.date(byAdding: .day, value: 365, to: start) ?? start
+        let predicate = eventStore.predicateForEvents(withStart: start, end: end, calendars: [targetCalendar])
+
+        var updated = 0
+        for event in eventStore.events(matching: predicate) where TaskTitleFormatter.isTaskTitle(event.title) {
+            applyReminder(to: event, settings: settings)
+            try eventStore.save(event, span: .thisEvent, commit: false)
+            updated += 1
+        }
+        try eventStore.commit()
+        return updated
     }
 
     func markDone(eventID: String, selectedDate: Date, settings: SchedulingSettings) async throws {

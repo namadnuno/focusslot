@@ -1,4 +1,5 @@
 import type { AppState, SchedulingSettings } from "@/lib/types";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,10 +8,14 @@ import { Switch } from "@/components/ui/switch";
 
 export function SettingsPanel({
   state,
-  onChange
+  disabled,
+  onChange,
+  onApplyReminderToExisting
 }: {
   state: AppState;
+  disabled: boolean;
   onChange: (settings: SchedulingSettings) => void;
+  onApplyReminderToExisting: () => void;
 }) {
   const settings = state.settings;
 
@@ -88,6 +93,34 @@ export function SettingsPanel({
           />
         </Field>
       </div>
+
+      <Field label="Reminder">
+        <Select
+          className="w-full"
+          value={settings.reminderMinutes ?? ""}
+          onChange={(event) =>
+            patch({ reminderMinutes: event.target.value === "" ? null : Number(event.target.value) })
+          }
+        >
+          <Option value="">No reminder</Option>
+          <Option value={0}>At start time</Option>
+          <Option value={5}>5 minutes before</Option>
+          <Option value={10}>10 minutes before</Option>
+          <Option value={30}>30 minutes before</Option>
+        </Select>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={disabled}
+          onClick={onApplyReminderToExisting}
+        >
+          Apply to upcoming tasks
+        </Button>
+        <span className="text-xs font-normal text-muted-foreground">
+          New tasks use this automatically. Use the button to update tasks already on your calendar (today onward).
+        </span>
+      </Field>
 
       <div className="flex items-center justify-between rounded-lg border p-3 text-sm">
         <Label htmlFor="auto-rebalance">Auto-rebalance tasks</Label>
