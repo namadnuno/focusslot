@@ -1,4 +1,4 @@
-import { ArrowRight, CalendarPlus, Check, Edit3, Plus, Settings } from "lucide-react";
+import { ArrowRight, CalendarClock, Check, Edit3, Plus, Settings } from "lucide-react";
 import { useFocusSlot } from "@/lib/use-focus-slot";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -68,8 +68,8 @@ export function App() {
     <Shell>
       <header className="space-y-3">
         <div className="flex items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-            <CalendarPlus className="h-5 w-5" />
+          <div className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-700 text-white shadow-md shadow-indigo-500/25 ring-1 ring-inset ring-white/15">
+            <CalendarClock className="h-5 w-5" />
           </div>
           <div className="min-w-0">
             <h1 className="truncate text-xl font-semibold tracking-tight">FocusSlot</h1>
