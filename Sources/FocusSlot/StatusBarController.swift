@@ -1,5 +1,4 @@
 import AppKit
-import SwiftUI
 
 @MainActor
 final class StatusBarController: NSObject {
@@ -32,14 +31,12 @@ final class StatusBarController: NSObject {
     }
 
     private func configurePopover() {
-        let rootView = FocusSlotMenuView()
-            .environmentObject(calendarController)
-            .environmentObject(settingsStore)
-            .frame(width: 430, height: 640)
-
         popover.behavior = .transient
-        popover.contentSize = NSSize(width: 430, height: 640)
-        popover.contentViewController = NSHostingController(rootView: rootView)
+        popover.contentSize = NSSize(width: 460, height: 680)
+        popover.contentViewController = WebPopoverViewController(
+            calendarController: calendarController,
+            settingsStore: settingsStore
+        )
     }
 
     @objc private func handleStatusItemClick(_ sender: NSStatusBarButton) {
@@ -94,6 +91,13 @@ final class StatusBarController: NSObject {
                 keyEquivalent: ""
             )
         )
+        menu.addItem(
+            NSMenuItem(
+                title: "Open Logs",
+                action: #selector(openLogs),
+                keyEquivalent: ""
+            )
+        )
         menu.addItem(.separator())
         menu.addItem(
             NSMenuItem(
@@ -125,6 +129,11 @@ final class StatusBarController: NSObject {
         }
 
         NSWorkspace.shared.open(url)
+    }
+
+    @objc private func openLogs() {
+        FocusSlotLogger.log("Opening log file")
+        NSWorkspace.shared.activateFileViewerSelecting([FocusSlotLogger.logFileURL])
     }
 
     @objc private func quit() {
