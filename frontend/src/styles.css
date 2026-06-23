@@ -59,9 +59,15 @@ body,
   height: 100%;
 }
 
+html {
+  /* Keep overflow off the viewport here, not on <body>: in WebKit/WKWebView
+     `body { overflow: hidden }` clips `position: fixed` descendants, which
+     crops portaled Radix dropdown/popover content. */
+  overflow: hidden;
+}
+
 body {
   margin: 0;
-  overflow: hidden;
   background:
     radial-gradient(circle at 20% -10%, hsl(217 92% 61% / 0.18), transparent 28%),
     linear-gradient(180deg, var(--color-background), hsl(220 20% 92%));
