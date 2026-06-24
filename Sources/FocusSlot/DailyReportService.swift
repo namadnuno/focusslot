@@ -33,13 +33,23 @@ struct DailyReportService {
     private let defaultBaseURL = "https://api.openai.com/v1"
     private let defaultModel = "gpt-4o-mini"
 
+    /// The generated update plus token usage and a best-effort cost estimate.
+    struct Report {
+        let text: String
+        let model: String
+        let promptTokens: Int
+        let completionTokens: Int
+        /// Estimated USD cost; nil when the model's price is unknown.
+        let costUSD: Double?
+    }
+
     func generate(
         yesterday: [CalendarEvent],
         today: [CalendarEvent],
         yesterdayDate: Date,
         todayDate: Date,
         settings: SchedulingSettings
-    ) async throws -> String {
+    ) async throws -> Report {
         guard let apiKey = settings.aiApiKey?.trimmingCharacters(in: .whitespacesAndNewlines),
               !apiKey.isEmpty else {
             throw ServiceError.missingAPIKey
@@ -93,7 +103,40 @@ struct DailyReportService {
             throw ServiceError.emptyResponse
         }
 
-        return text
+        let promptTokens = decoded.usage?.prompt_tokens ?? 0
+        let completionTokens = decoded.usage?.completion_tokens ?? 0
+
+        return Report(
+            text: text,
+            model: model,
+            promptTokens: promptTokens,
+            completionTokens: completionTokens,
+            costUSD: Self.estimatedCost(model: model, promptTokens: promptTokens, completionTokens: completionTokens)
+        )
+    }
+
+    // MARK: - Cost estimation
+
+    /// Per-1M-token USD prices for common OpenAI models (input, output).
+    /// Best-effort and may drift — surfaced as an estimate. Unknown models → nil cost.
+    private static let prices: [(prefix: String, input: Double, output: Double)] = [
+        ("gpt-4o-mini", 0.15, 0.60),
+        ("gpt-4o", 2.50, 10.00),
+        ("gpt-4.1-nano", 0.10, 0.40),
+        ("gpt-4.1-mini", 0.40, 1.60),
+        ("gpt-4.1", 2.00, 8.00)
+    ]
+
+    private static func estimatedCost(model: String, promptTokens: Int, completionTokens: Int) -> Double? {
+        // Longest prefix wins (e.g. "gpt-4o-mini" before "gpt-4o").
+        let match = prices
+            .filter { model.hasPrefix($0.prefix) }
+            .max { $0.prefix.count < $1.prefix.count }
+
+        guard let match else { return nil }
+
+        return Double(promptTokens) / 1_000_000 * match.input
+            + Double(completionTokens) / 1_000_000 * match.output
     }
 
     // MARK: - Prompt building
@@ -183,5 +226,10 @@ private struct ChatResponse: Decodable {
     struct Choice: Decodable {
         let message: ChatMessage
     }
+    struct Usage: Decodable {
+        let prompt_tokens: Int?
+        let completion_tokens: Int?
+    }
     let choices: [Choice]
+    let usage: Usage?
 }

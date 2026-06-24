@@ -115,6 +115,10 @@ struct UpdateTaskPayload: Decodable {
 
 struct GenerateDailyResult: Encodable {
     let text: String
+    let model: String
+    let promptTokens: Int
+    let completionTokens: Int
+    let costUSD: Double?
 }
 
 struct EventActionPayload: Decodable {

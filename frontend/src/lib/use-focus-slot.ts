@@ -33,6 +33,14 @@ export type DayFilter = "today" | "tomorrow" | "custom";
 
 export type TaskFilter = "active" | "done";
 
+export type DailyReport = {
+  text: string;
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+  costUSD: number | null;
+};
+
 /** How far to shift a task: minutes forward, or to the next day. */
 export type MoveOption = 15 | 30 | 60 | 120 | 180 | "nextDay";
 
@@ -64,7 +72,7 @@ export function useFocusSlot() {
   const [dayFilter, setDayFilter] = useState<DayFilter>("today");
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("active");
   const [isCustomDateOpen, setIsCustomDateOpen] = useState(false);
-  const [dailyText, setDailyText] = useState<string | null>(null);
+  const [daily, setDaily] = useState<DailyReport | null>(null);
   const [isGeneratingDaily, setIsGeneratingDaily] = useState(false);
 
   const selectedDateISO = useMemo(() => startOfLocalDayISO(selectedDate), [selectedDate]);
@@ -232,10 +240,10 @@ export function useFocusSlot() {
     setStatus(null);
     try {
       // Driven by the selected day: "today" = selected date, "yesterday" = the day before it.
-      const result = await sendNative<{ selectedDate: string }, { text: string }>("generateDaily", {
+      const result = await sendNative<{ selectedDate: string }, DailyReport>("generateDaily", {
         selectedDate: selectedDateISO
       });
-      setDailyText(result.text);
+      setDaily(result);
     } catch (error) {
       setStatus({ text: error instanceof Error ? error.message : String(error), tone: "error" });
     } finally {
@@ -312,8 +320,8 @@ export function useFocusSlot() {
     selectDate,
     handleDayFilterChange,
     generateDaily,
-    dailyText,
-    setDailyText,
+    daily,
+    setDaily,
     isGeneratingDaily
   };
 }

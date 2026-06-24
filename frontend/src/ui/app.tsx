@@ -63,8 +63,8 @@ export function App() {
     selectDate,
     handleDayFilterChange,
     generateDaily,
-    dailyText,
-    setDailyText,
+    daily,
+    setDaily,
     isGeneratingDaily
   } = focusSlot;
 
@@ -266,9 +266,9 @@ export function App() {
       )}
 
       <DailySheet
-        text={dailyText}
+        report={daily}
         isGenerating={isGeneratingDaily}
-        onClose={() => setDailyText(null)}
+        onClose={() => setDaily(null)}
         onRegenerate={generateDaily}
       />
     </Shell>

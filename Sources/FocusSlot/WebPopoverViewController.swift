@@ -167,14 +167,20 @@ final class WebPopoverViewController: NSViewController, WKScriptMessageHandler {
                 let yesterdayTasks = calendarController.fetchTaskEvents(on: yesterday, settings: settingsStore.settings)
                 let todayTasks = calendarController.fetchTaskEvents(on: today, settings: settingsStore.settings)
 
-                let text = try await DailyReportService().generate(
+                let report = try await DailyReportService().generate(
                     yesterday: yesterdayTasks,
                     today: todayTasks,
                     yesterdayDate: yesterday,
                     todayDate: today,
                     settings: settingsStore.settings
                 )
-                try sendSuccess(id: id, result: GenerateDailyResult(text: text))
+                try sendSuccess(id: id, result: GenerateDailyResult(
+                    text: report.text,
+                    model: report.model,
+                    promptTokens: report.promptTokens,
+                    completionTokens: report.completionTokens,
+                    costUSD: report.costUSD
+                ))
             case "openCalendarSettings":
                 openCalendarSettings()
                 try sendSuccess(id: id, result: EmptyResult())

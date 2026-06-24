@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Check, Copy, RefreshCw, Sparkles } from "lucide-react";
+import { Check, Copy, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import type { DailyReport } from "@/lib/use-focus-slot";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -10,13 +11,19 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 
+function formatCost(usd: number): string {
+  if (usd === 0) return "$0";
+  if (usd < 0.01) return `$${usd.toFixed(4)}`;
+  return `$${usd.toFixed(2)}`;
+}
+
 export function DailySheet({
-  text,
+  report,
   isGenerating,
   onClose,
   onRegenerate
 }: {
-  text: string | null;
+  report: DailyReport | null;
   isGenerating: boolean;
   onClose: () => void;
   onRegenerate: () => void;
@@ -26,16 +33,19 @@ export function DailySheet({
   // Reset the copied state whenever a fresh draft arrives.
   useEffect(() => {
     setCopied(false);
-  }, [text]);
+  }, [report]);
 
   async function copy() {
-    if (!text) return;
-    await navigator.clipboard.writeText(text);
+    if (!report) return;
+    await navigator.clipboard.writeText(report.text);
     setCopied(true);
   }
 
+  const open = report !== null || isGenerating;
+  const showLoading = isGenerating && !report;
+
   return (
-    <Sheet open={text !== null} onOpenChange={(open) => !open && onClose()}>
+    <Sheet open={open} onOpenChange={(value) => !value && !isGenerating && onClose()}>
       <SheetContent side="bottom" className="max-h-[92%] gap-0 overflow-y-auto rounded-t-2xl">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2.5">
@@ -50,22 +60,42 @@ export function DailySheet({
         </SheetHeader>
 
         <div className="space-y-3 px-4 pb-4">
-          <Textarea
-            className="min-h-64 font-mono text-xs leading-relaxed"
-            value={text ?? ""}
-            readOnly
-          />
+          {showLoading ? (
+            <div className="grid min-h-64 place-items-center rounded-md border border-dashed">
+              <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <p className="text-sm">Generating your daily…</p>
+              </div>
+            </div>
+          ) : (
+            <Textarea
+              className="min-h-64 font-mono text-xs leading-relaxed"
+              value={report?.text ?? ""}
+              readOnly
+            />
+          )}
+
+          {report && !isGenerating && (
+            <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+              <span className="tabular-nums">
+                {report.promptTokens.toLocaleString()} in · {report.completionTokens.toLocaleString()} out
+              </span>
+              {report.costUSD !== null ? (
+                <span className="rounded-full bg-muted px-2 py-0.5 font-medium tabular-nums">
+                  ~{formatCost(report.costUSD)} est.
+                </span>
+              ) : (
+                <span className="text-muted-foreground/70">cost unknown for {report.model}</span>
+              )}
+            </p>
+          )}
+
           <div className="flex gap-2">
-            <Button
-              className="flex-1"
-              variant="outline"
-              disabled={isGenerating}
-              onClick={onRegenerate}
-            >
+            <Button className="flex-1" variant="outline" disabled={isGenerating} onClick={onRegenerate}>
               <RefreshCw className={`h-4 w-4 ${isGenerating ? "animate-spin" : ""}`} />
               {isGenerating ? "Generating…" : "Regenerate"}
             </Button>
-            <Button className="flex-1" onClick={copy}>
+            <Button className="flex-1" disabled={!report || isGenerating} onClick={copy}>
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               {copied ? "Copied" : "Copy"}
             </Button>
