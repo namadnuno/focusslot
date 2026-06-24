@@ -94,7 +94,8 @@ final class WebPopoverViewController: NSViewController, WKScriptMessageHandler {
                         category: request.category,
                         durationMinutes: request.durationMinutes,
                         selectedDate: request.selectedDate,
-                        startDate: request.startDate
+                        startDate: request.startDate,
+                        notes: request.notes
                     ),
                     settings: settingsStore.settings
                 )
@@ -107,6 +108,7 @@ final class WebPopoverViewController: NSViewController, WKScriptMessageHandler {
                     category: request.category,
                     startDate: request.startDate,
                     durationMinutes: request.durationMinutes,
+                    notes: request.notes,
                     settings: settingsStore.settings
                 )
                 try sendSuccess(id: id, result: appState(selectedDate: request.selectedDate))
@@ -156,6 +158,23 @@ final class WebPopoverViewController: NSViewController, WKScriptMessageHandler {
                 FocusSlotLogger.log("Applied reminder to \(count) existing tasks")
                 await calendarController.loadEvents(for: request.selectedDate, settings: settingsStore.settings)
                 try sendSuccess(id: id, result: appState(selectedDate: request.selectedDate))
+            case "generateDaily":
+                let request = try decode(SelectedDatePayload.self, from: payload)
+                let calendar = Calendar.current
+                let today = calendar.startOfDay(for: request.selectedDate)
+                let yesterday = calendar.date(byAdding: .day, value: -1, to: today) ?? today
+
+                let yesterdayTasks = calendarController.fetchTaskEvents(on: yesterday, settings: settingsStore.settings)
+                let todayTasks = calendarController.fetchTaskEvents(on: today, settings: settingsStore.settings)
+
+                let text = try await DailyReportService().generate(
+                    yesterday: yesterdayTasks,
+                    today: todayTasks,
+                    yesterdayDate: yesterday,
+                    todayDate: today,
+                    settings: settingsStore.settings
+                )
+                try sendSuccess(id: id, result: GenerateDailyResult(text: text))
             case "openCalendarSettings":
                 openCalendarSettings()
                 try sendSuccess(id: id, result: EmptyResult())

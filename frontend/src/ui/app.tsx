@@ -1,9 +1,10 @@
-import { ArrowRight, CalendarClock, Check, Edit3, Plus, Settings } from "lucide-react";
+import { ArrowRight, CalendarClock, Check, Edit3, Plus, Settings, Sparkles } from "lucide-react";
 import { useFocusSlot } from "@/lib/use-focus-slot";
 import type { TaskFilter } from "@/lib/use-focus-slot";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DailySheet } from "./daily-sheet";
 import {
   Sheet,
   SheetContent,
@@ -29,6 +30,8 @@ export function App() {
     isBusy,
     title,
     setTitle,
+    notes,
+    setNotes,
     category,
     setCategory,
     durationMinutes,
@@ -58,7 +61,11 @@ export function App() {
     updateSettings,
     startEditing,
     selectDate,
-    handleDayFilterChange
+    handleDayFilterChange,
+    generateDaily,
+    dailyText,
+    setDailyText,
+    isGeneratingDaily
   } = focusSlot;
 
   if (!state) {
@@ -84,6 +91,15 @@ export function App() {
           </div>
           <Button
             className="ml-auto"
+            aria-label="Generate daily update"
+            size="icon"
+            variant="secondary"
+            disabled={isGeneratingDaily}
+            onClick={generateDaily}
+          >
+            <Sparkles className={`h-4 w-4 ${isGeneratingDaily ? "animate-pulse" : ""}`} />
+          </Button>
+          <Button
             aria-label="Settings"
             size="icon"
             variant={isSettingsOpen ? "default" : "secondary"}
@@ -223,12 +239,14 @@ export function App() {
               ) : (
                 <NewTaskForm
                   title={title}
+                  notes={notes}
                   category={category}
                   durationMinutes={durationMinutes}
                   customTimeEnabled={customTimeEnabled}
                   customStartDate={customStartDate}
                   disabled={isBusy}
                   onTitleChange={setTitle}
+                  onNotesChange={setNotes}
                   onCategoryChange={setCategory}
                   onDurationChange={setDurationMinutes}
                   onCustomTimeToggle={setCustomTimeEnabled}
@@ -246,6 +264,13 @@ export function App() {
           {status.text}
         </p>
       )}
+
+      <DailySheet
+        text={dailyText}
+        isGenerating={isGeneratingDaily}
+        onClose={() => setDailyText(null)}
+        onRegenerate={generateDaily}
+      />
     </Shell>
   );
 }

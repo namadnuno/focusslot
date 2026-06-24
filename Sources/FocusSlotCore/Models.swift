@@ -16,6 +16,12 @@ public struct SchedulingSettings: Codable, Equatable, Sendable {
     /// Minutes before a task's start to fire a calendar alert.
     /// nil = no reminder, 0 = at start time, >0 = that many minutes before.
     public var reminderMinutes: Int?
+    /// OpenAI-compatible API base URL for the AI daily generator (e.g. https://api.openai.com/v1).
+    public var aiBaseURL: String?
+    /// API key for the AI daily generator. Stored locally in UserDefaults.
+    public var aiApiKey: String?
+    /// Model id for the AI daily generator (e.g. gpt-4o-mini).
+    public var aiModel: String?
 
     public init(
         workdayStartHour: Int = 9,
@@ -30,7 +36,10 @@ public struct SchedulingSettings: Codable, Equatable, Sendable {
         slotGranularityMinutes: Int = 5,
         calendarIdentifier: String? = nil,
         autoRebalance: Bool = false,
-        reminderMinutes: Int? = nil
+        reminderMinutes: Int? = nil,
+        aiBaseURL: String? = nil,
+        aiApiKey: String? = nil,
+        aiModel: String? = nil
     ) {
         self.workdayStartHour = workdayStartHour
         self.workdayStartMinute = workdayStartMinute
@@ -45,6 +54,9 @@ public struct SchedulingSettings: Codable, Equatable, Sendable {
         self.calendarIdentifier = calendarIdentifier
         self.autoRebalance = autoRebalance
         self.reminderMinutes = reminderMinutes
+        self.aiBaseURL = aiBaseURL
+        self.aiApiKey = aiApiKey
+        self.aiModel = aiModel
     }
 }
 
@@ -55,6 +67,8 @@ public struct CalendarEvent: Equatable, Sendable, Identifiable {
     public let endDate: Date
     public let isAllDay: Bool
     public let calendarIdentifier: String?
+    /// Free-text description stored in the calendar event's notes field.
+    public let notes: String?
 
     public init(
         id: String,
@@ -62,7 +76,8 @@ public struct CalendarEvent: Equatable, Sendable, Identifiable {
         startDate: Date,
         endDate: Date,
         isAllDay: Bool = false,
-        calendarIdentifier: String? = nil
+        calendarIdentifier: String? = nil,
+        notes: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -70,6 +85,7 @@ public struct CalendarEvent: Equatable, Sendable, Identifiable {
         self.endDate = endDate
         self.isAllDay = isAllDay
         self.calendarIdentifier = calendarIdentifier
+        self.notes = notes
     }
 }
 
@@ -81,19 +97,23 @@ public struct TaskDraft: Equatable, Sendable {
     /// Explicit start time chosen by the user. When nil, the task is auto-scheduled
     /// into the next available slot.
     public let startDate: Date?
+    /// Optional free-text description stored in the event notes.
+    public let notes: String?
 
     public init(
         title: String,
         category: TaskCategory? = nil,
         durationMinutes: Int,
         selectedDate: Date,
-        startDate: Date? = nil
+        startDate: Date? = nil,
+        notes: String? = nil
     ) {
         self.title = title
         self.category = category
         self.durationMinutes = durationMinutes
         self.selectedDate = selectedDate
         self.startDate = startDate
+        self.notes = notes
     }
 }
 

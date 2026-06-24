@@ -25,6 +25,7 @@ struct WebCalendarTask: Encodable {
     let endDate: Date
     let durationMinutes: Int
     let isDone: Bool
+    let notes: String?
 
     init(event: CalendarEvent) {
         id = event.id
@@ -35,6 +36,7 @@ struct WebCalendarTask: Encodable {
         endDate = event.endDate
         durationMinutes = Int(event.endDate.timeIntervalSince(event.startDate) / 60)
         isDone = TaskTitleFormatter.isDone(event.title)
+        notes = event.notes
     }
 }
 
@@ -98,6 +100,7 @@ struct AddTaskPayload: Decodable {
     let selectedDate: Date
     /// Optional explicit start time; absent when the task should be auto-scheduled.
     let startDate: Date?
+    let notes: String?
 }
 
 struct UpdateTaskPayload: Decodable {
@@ -107,6 +110,11 @@ struct UpdateTaskPayload: Decodable {
     let startDate: Date
     let durationMinutes: Int
     let selectedDate: Date
+    let notes: String?
+}
+
+struct GenerateDailyResult: Encodable {
+    let text: String
 }
 
 struct EventActionPayload: Decodable {

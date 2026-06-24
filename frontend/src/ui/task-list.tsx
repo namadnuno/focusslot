@@ -109,6 +109,9 @@ function TaskItem({
               {formatTime(start)} – {formatTime(end)}
             </span>
           </p>
+          {task.notes && (
+            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground/80">{task.notes}</p>
+          )}
         </div>
         <span className="rounded-full border border-border/70 bg-muted/50 px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
           {task.durationMinutes}m

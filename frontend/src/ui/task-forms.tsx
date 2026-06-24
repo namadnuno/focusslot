@@ -5,6 +5,7 @@ import { durations } from "@/lib/types";
 import type { EditDraft, MoveOption } from "@/lib/use-focus-slot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { NativeSelect as Select, NativeSelectOption as Option } from "@/components/ui/native-select";
 import { Switch } from "@/components/ui/switch";
@@ -12,12 +13,14 @@ import { CategoryPicker } from "./category-picker";
 
 export function NewTaskForm({
   title,
+  notes,
   category,
   durationMinutes,
   customTimeEnabled,
   customStartDate,
   disabled,
   onTitleChange,
+  onNotesChange,
   onCategoryChange,
   onDurationChange,
   onCustomTimeToggle,
@@ -25,12 +28,14 @@ export function NewTaskForm({
   onSubmit
 }: {
   title: string;
+  notes: string;
   category: TaskCategory;
   durationMinutes: number;
   customTimeEnabled: boolean;
   customStartDate: string;
   disabled: boolean;
   onTitleChange: (value: string) => void;
+  onNotesChange: (value: string) => void;
   onCategoryChange: (value: TaskCategory) => void;
   onDurationChange: (value: number) => void;
   onCustomTimeToggle: (enabled: boolean) => void;
@@ -48,6 +53,18 @@ export function NewTaskForm({
           if (event.key === "Enter") onSubmit();
         }}
       />
+
+      <div className="space-y-1.5">
+        <Label htmlFor="new-task-notes" className="text-xs font-medium text-muted-foreground">
+          Description
+        </Label>
+        <Textarea
+          id="new-task-notes"
+          placeholder="Context, links, sub-tasks — feeds your AI daily."
+          value={notes}
+          onChange={(event) => onNotesChange(event.target.value)}
+        />
+      </div>
 
       <div className="space-y-1.5">
         <Label className="text-xs font-medium text-muted-foreground">Category</Label>
@@ -176,6 +193,18 @@ export function EditTaskForm({
           if (event.key === "Enter") onSave();
         }}
       />
+
+      <div className="space-y-1.5">
+        <Label htmlFor="edit-task-notes" className="text-xs font-medium text-muted-foreground">
+          Description
+        </Label>
+        <Textarea
+          id="edit-task-notes"
+          placeholder="Context, links, sub-tasks — feeds your AI daily."
+          value={draft.notes}
+          onChange={(event) => onChange({ ...draft, notes: event.target.value })}
+        />
+      </div>
 
       <div className="space-y-1.5">
         <Label className="text-xs font-medium text-muted-foreground">Category</Label>

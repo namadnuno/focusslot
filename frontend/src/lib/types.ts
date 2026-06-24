@@ -25,6 +25,9 @@ export type SchedulingSettings = {
   calendarIdentifier: string | null;
   autoRebalance: boolean;
   reminderMinutes: number | null;
+  aiBaseURL: string | null;
+  aiApiKey: string | null;
+  aiModel: string | null;
 };
 
 export type CalendarTask = {
@@ -36,6 +39,7 @@ export type CalendarTask = {
   endDate: string;
   durationMinutes: number;
   isDone: boolean;
+  notes: string | null;
 };
 
 export type AppState = {

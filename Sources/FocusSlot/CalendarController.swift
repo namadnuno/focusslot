@@ -125,6 +125,7 @@ final class CalendarController: ObservableObject {
         event.title = TaskTitleFormatter.eventTitle(for: title, category: draft.category)
         event.startDate = slot.start
         event.endDate = slot.end
+        event.notes = normalizedNotes(draft.notes)
         applyReminder(to: event, settings: settings)
 
         try eventStore.save(event, span: .thisEvent, commit: true)
@@ -138,6 +139,7 @@ final class CalendarController: ObservableObject {
         category: TaskCategory?,
         startDate: Date,
         durationMinutes: Int,
+        notes: String?,
         settings: SchedulingSettings
     ) async throws {
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -150,6 +152,7 @@ final class CalendarController: ObservableObject {
         event.title = TaskTitleFormatter.eventTitle(for: cleanTitle, category: category)
         event.startDate = startDate
         event.endDate = startDate.addingTimeInterval(TimeInterval(durationMinutes * 60))
+        event.notes = normalizedNotes(notes)
         applyReminder(to: event, settings: settings)
 
         try eventStore.save(event, span: .thisEvent, commit: true)
@@ -337,6 +340,36 @@ final class CalendarController: ObservableObject {
         return writableCalendars.first
     }
 
+    /// Reads task events for a single day without mutating published state.
+    /// Used by the daily generator, which inspects other days (yesterday/today)
+    /// without disturbing the day the user is currently viewing.
+    func fetchTaskEvents(on date: Date, settings: SchedulingSettings) -> [CalendarEvent] {
+        guard accessState == .granted else { return [] }
+
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: date)
+        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? date
+        let predicate = eventStore.predicateForEvents(withStart: startOfDay, end: endOfDay, calendars: nil)
+        let taskCalendarID = selectedCalendar(settings: settings)?.calendarIdentifier
+
+        return eventStore.events(matching: predicate)
+            .map(Self.calendarEvent)
+            .filter {
+                TaskTitleFormatter.isTaskTitle($0.title) &&
+                    (taskCalendarID == nil || $0.calendarIdentifier == taskCalendarID)
+            }
+            .sorted { $0.startDate < $1.startDate }
+    }
+
+    /// Trims notes and collapses empty strings to nil so EventKit clears the field.
+    private func normalizedNotes(_ notes: String?) -> String? {
+        guard let trimmed = notes?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !trimmed.isEmpty else {
+            return nil
+        }
+        return trimmed
+    }
+
     private static func calendarEvent(_ event: EKEvent) -> CalendarEvent {
         CalendarEvent(
             id: event.eventIdentifier ?? event.calendarItemIdentifier,
@@ -344,7 +377,8 @@ final class CalendarController: ObservableObject {
             startDate: event.startDate,
             endDate: event.endDate,
             isAllDay: event.isAllDay,
-            calendarIdentifier: event.calendar?.calendarIdentifier
+            calendarIdentifier: event.calendar?.calendarIdentifier,
+            notes: event.notes
         )
     }
 }

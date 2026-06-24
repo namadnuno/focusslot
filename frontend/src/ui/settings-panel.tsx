@@ -130,6 +130,46 @@ export function SettingsPanel({
           onCheckedChange={(checked) => patch({ autoRebalance: checked })}
         />
       </div>
+
+      <div className="space-y-3 rounded-lg border p-3">
+        <div>
+          <h3 className="text-sm font-semibold">AI daily</h3>
+          <p className="text-xs text-muted-foreground">
+            Generates a standup update from your tasks. Uses any OpenAI-compatible API.
+          </p>
+        </div>
+
+        <Field label="API key">
+          <Input
+            type="password"
+            placeholder="sk-…"
+            autoComplete="off"
+            value={settings.aiApiKey ?? ""}
+            onChange={(event) => patch({ aiApiKey: event.target.value || null })}
+          />
+        </Field>
+
+        <Field label="Model">
+          <Input
+            placeholder="gpt-4o-mini"
+            value={settings.aiModel ?? ""}
+            onChange={(event) => patch({ aiModel: event.target.value || null })}
+          />
+        </Field>
+
+        <Field label="Base URL">
+          <Input
+            placeholder="https://api.openai.com/v1"
+            value={settings.aiBaseURL ?? ""}
+            onChange={(event) => patch({ aiBaseURL: event.target.value || null })}
+          />
+        </Field>
+
+        <span className="text-xs text-muted-foreground">
+          Stored locally on this Mac. Change the base URL to use OpenRouter, a local Ollama, or any
+          OpenAI-compatible endpoint.
+        </span>
+      </div>
     </Card>
   );
 }

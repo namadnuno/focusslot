@@ -26,6 +26,7 @@ export type EditDraft = {
   category: TaskCategory;
   startDate: string;
   durationMinutes: number;
+  notes: string;
 };
 
 export type DayFilter = "today" | "tomorrow" | "custom";
@@ -52,6 +53,7 @@ export function useFocusSlot() {
   const [status, setStatus] = useState<StatusMessage | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [title, setTitle] = useState("");
+  const [notes, setNotes] = useState("");
   const [category, setCategory] = useState<TaskCategory>("CS");
   const [durationMinutes, setDurationMinutes] = useState(15);
   const [customTimeEnabled, setCustomTimeEnabled] = useState(false);
@@ -62,6 +64,8 @@ export function useFocusSlot() {
   const [dayFilter, setDayFilter] = useState<DayFilter>("today");
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("active");
   const [isCustomDateOpen, setIsCustomDateOpen] = useState(false);
+  const [dailyText, setDailyText] = useState<string | null>(null);
+  const [isGeneratingDaily, setIsGeneratingDaily] = useState(false);
 
   const selectedDateISO = useMemo(() => startOfLocalDayISO(selectedDate), [selectedDate]);
 
@@ -110,6 +114,7 @@ export function useFocusSlot() {
     const customStart = customTimeEnabled ? fromDatetimeLocalInput(customStartDate) : null;
     const targetDateISO = customStart ? startOfLocalDayISO(customStart) : selectedDateISO;
 
+    const trimmedNotes = notes.trim();
     const nextState = await runMutation(
       "addTask",
       {
@@ -117,6 +122,7 @@ export function useFocusSlot() {
         category,
         durationMinutes,
         selectedDate: targetDateISO,
+        notes: trimmedNotes || null,
         ...(customStart ? { startDate: customStart.toISOString() } : {})
       },
       "Task added"
@@ -124,6 +130,7 @@ export function useFocusSlot() {
 
     if (nextState) {
       setTitle("");
+      setNotes("");
       setIsNewTaskOpen(false);
       setCustomTimeEnabled(false);
       setCustomStartDate(defaultCustomStart());
@@ -150,6 +157,7 @@ export function useFocusSlot() {
         category: editDraft.category,
         startDate: startDate.toISOString(),
         durationMinutes: editDraft.durationMinutes,
+        notes: editDraft.notes.trim() || null,
         selectedDate: startOfLocalDayISO(startDate)
       },
       "Task updated"
@@ -213,9 +221,26 @@ export function useFocusSlot() {
       title: task.displayTitle,
       category: task.category ?? "CS",
       startDate: datetimeLocalValue(new Date(task.startDate)),
-      durationMinutes: task.durationMinutes
+      durationMinutes: task.durationMinutes,
+      notes: task.notes ?? ""
     });
     setStatus(null);
+  }
+
+  async function generateDaily() {
+    setIsGeneratingDaily(true);
+    setStatus(null);
+    try {
+      // Driven by the selected day: "today" = selected date, "yesterday" = the day before it.
+      const result = await sendNative<{ selectedDate: string }, { text: string }>("generateDaily", {
+        selectedDate: selectedDateISO
+      });
+      setDailyText(result.text);
+    } catch (error) {
+      setStatus({ text: error instanceof Error ? error.message : String(error), tone: "error" });
+    } finally {
+      setIsGeneratingDaily(false);
+    }
   }
 
   function selectDate(nextDate: Date, nextFilter = filterForDate(nextDate)) {
@@ -254,6 +279,8 @@ export function useFocusSlot() {
     isBusy,
     title,
     setTitle,
+    notes,
+    setNotes,
     category,
     setCategory,
     durationMinutes,
@@ -282,8 +309,11 @@ export function useFocusSlot() {
     applyReminderToExisting,
     updateSettings,
     startEditing,
-    selectDate
-,
-    handleDayFilterChange
+    selectDate,
+    handleDayFilterChange,
+    generateDaily,
+    dailyText,
+    setDailyText,
+    isGeneratingDaily
   };
 }

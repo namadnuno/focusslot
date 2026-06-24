@@ -371,6 +371,7 @@ struct FocusSlotMenuView: View {
                     category: editCategory,
                     startDate: editStartDate,
                     durationMinutes: editDurationMinutes,
+                    notes: nil,
                     settings: settingsStore.settings
                 )
                 selectedDate = editStartDate
