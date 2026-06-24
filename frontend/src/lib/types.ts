@@ -1,4 +1,4 @@
-export type TaskCategory = "CS" | "Bugs" | "Feature" | "Pair" | "Investigation";
+export type TaskCategory = "CS" | "Bugs" | "Feature" | "Pair" | "Investigation" | "Life";
 
 export type CalendarAccessState =
   | { status: "unknown" | "requesting" | "granted" }
@@ -60,5 +60,5 @@ export type NativeResponse<TResult = unknown> = {
   error?: string;
 };
 
-export const categories: TaskCategory[] = ["CS", "Bugs", "Feature", "Pair", "Investigation"];
+export const categories: TaskCategory[] = ["CS", "Bugs", "Feature", "Pair", "Investigation", "Life"];
 export const durations = [5, 10, 15, 20, 30, 45, 60, 90, 120];

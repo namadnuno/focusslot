@@ -30,6 +30,8 @@ export type EditDraft = {
 
 export type DayFilter = "today" | "tomorrow" | "custom";
 
+export type TaskFilter = "active" | "done";
+
 /** How far to shift a task: minutes forward, or to the next day. */
 export type MoveOption = 15 | 30 | 60 | 120 | 180 | "nextDay";
 
@@ -58,9 +60,15 @@ export function useFocusSlot() {
   const [movingTask, setMovingTask] = useState<CalendarTask | null>(null);
   const [isNewTaskOpen, setIsNewTaskOpen] = useState(false);
   const [dayFilter, setDayFilter] = useState<DayFilter>("today");
+  const [taskFilter, setTaskFilter] = useState<TaskFilter>("active");
   const [isCustomDateOpen, setIsCustomDateOpen] = useState(false);
 
   const selectedDateISO = useMemo(() => startOfLocalDayISO(selectedDate), [selectedDate]);
+
+  const visibleTasks = useMemo(
+    () => (state?.tasks ?? []).filter((task) => (taskFilter === "done" ? task.isDone : !task.isDone)),
+    [state?.tasks, taskFilter]
+  );
 
   useEffect(() => {
     void refresh("initialize");
@@ -262,6 +270,9 @@ export function useFocusSlot() {
     isNewTaskOpen,
     setIsNewTaskOpen,
     dayFilter,
+    taskFilter,
+    setTaskFilter,
+    visibleTasks,
     isCustomDateOpen,
     setIsCustomDateOpen,
     refresh,

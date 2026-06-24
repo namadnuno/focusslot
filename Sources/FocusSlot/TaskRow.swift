@@ -95,6 +95,8 @@ struct TaskRow: View {
             return .orange
         case .investigation:
             return .teal
+        case .life:
+            return .pink
         case nil:
             return .accentColor
         }
@@ -125,6 +127,8 @@ struct CategoryBadge: View {
             return .orange
         case .investigation:
             return .teal
+        case .life:
+            return .pink
         }
     }
 }

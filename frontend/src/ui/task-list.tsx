@@ -1,5 +1,5 @@
 import { ArrowRight, Check, Clock, Edit3, MoreHorizontal, RotateCcw, Trash2 } from "lucide-react";
-import { categoryStyles } from "@/lib/categories";
+import { categoryAccents, categoryStyles, defaultAccent } from "@/lib/categories";
 import type { CalendarTask } from "@/lib/types";
 import { formatTime } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -74,21 +74,45 @@ function TaskItem({
 }) {
   const start = new Date(task.startDate);
   const end = new Date(task.endDate);
+  const accent = task.category ? categoryAccents[task.category] : defaultAccent;
+  const rail = task.isDone ? "bg-emerald-500" : accent.rail;
+  const glow = task.isDone ? "shadow-emerald-500/50" : accent.glow;
+  const tint = task.isDone ? "from-emerald-500/10" : accent.tint;
 
   return (
-    <Card className="group relative p-3">
-      <div className={`absolute inset-y-3 left-0 w-1 rounded-r ${task.isDone ? "bg-emerald-500" : "bg-primary"}`} />
-      <div className="flex items-center gap-3 pl-2">
+    <Card
+      className={`group relative overflow-hidden rounded-xl border-border/60 p-3 backdrop-blur-sm transition-all duration-300 hover:-translate-y-px hover:border-border hover:shadow-lg hover:shadow-black/5 ${
+        task.isDone ? "opacity-70" : ""
+      }`}
+    >
+      {/* ambient category tint sweeping in from the rail */}
+      <div
+        className={`pointer-events-none absolute inset-0 bg-gradient-to-r ${tint} via-transparent to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-100`}
+      />
+      {/* glowing vertical rail */}
+      <div className={`absolute inset-y-2.5 left-0 w-[3px] rounded-r-full shadow-[0_0_8px] ${rail} ${glow}`} />
+      <div className="relative flex items-center gap-3 pl-2.5">
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-2">
-            {task.category && <Badge className={categoryStyles[task.category]}>{task.category}</Badge>}
-            <p className="truncate text-sm font-medium">{task.displayTitle}</p>
+            {task.category && (
+              <Badge className={`${categoryStyles[task.category]} text-[10px] uppercase tracking-wider`}>
+                {task.category}
+              </Badge>
+            )}
+            <p className={`truncate text-sm font-medium ${task.isDone ? "text-muted-foreground line-through" : ""}`}>
+              {task.displayTitle}
+            </p>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {formatTime(start)} - {formatTime(end)}
+          <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className={`h-1.5 w-1.5 rounded-full ${task.isDone ? "bg-emerald-500" : accent.dot}`} />
+            <span className="tabular-nums">
+              {formatTime(start)} – {formatTime(end)}
+            </span>
           </p>
         </div>
-        <span className="text-xs tabular-nums text-muted-foreground">{task.durationMinutes}m</span>
+        <span className="rounded-full border border-border/70 bg-muted/50 px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
+          {task.durationMinutes}m
+        </span>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button size="icon" variant="ghost" className="h-8 w-8">

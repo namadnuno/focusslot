@@ -1,7 +1,9 @@
 import { ArrowRight, CalendarClock, Check, Edit3, Plus, Settings } from "lucide-react";
 import { useFocusSlot } from "@/lib/use-focus-slot";
+import type { TaskFilter } from "@/lib/use-focus-slot";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Sheet,
   SheetContent,
@@ -43,6 +45,9 @@ export function App() {
     isNewTaskOpen,
     setIsNewTaskOpen,
     dayFilter,
+    taskFilter,
+    setTaskFilter,
+    visibleTasks,
     isCustomDateOpen,
     setIsCustomDateOpen,
     refresh,
@@ -113,13 +118,25 @@ export function App() {
       ) : (
         <>
           <section className="flex min-h-0 flex-1 flex-col">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Tasks</h2>
-              {isBusy && <span className="text-xs text-muted-foreground">Syncing...</span>}
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold">Tasks</h2>
+                {isBusy && <span className="text-xs text-muted-foreground">Syncing...</span>}
+              </div>
+              <Tabs value={taskFilter} onValueChange={(value) => setTaskFilter(value as TaskFilter)}>
+                <TabsList className="h-7">
+                  <TabsTrigger value="active" className="text-xs">
+                    Active
+                  </TabsTrigger>
+                  <TabsTrigger value="done" className="text-xs">
+                    Done
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
             <div className="min-h-0 flex-1">
               <TaskList
-                tasks={state.tasks}
+                tasks={visibleTasks}
                 onEdit={startEditing}
                 onDone={(task) =>
                   runMutation(

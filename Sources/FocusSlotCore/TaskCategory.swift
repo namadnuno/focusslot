@@ -6,6 +6,7 @@ public enum TaskCategory: String, CaseIterable, Codable, Equatable, Sendable, Id
     case feature = "Feature"
     case pair = "Pair"
     case investigation = "Investigation"
+    case life = "Life"
 
     public var id: String { rawValue }
 }
