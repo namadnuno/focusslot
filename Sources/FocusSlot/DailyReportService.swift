@@ -146,26 +146,48 @@ struct DailyReportService {
     Geekbot check-in. Output GitHub-flavored markdown only — no preamble, no \
     closing remarks, no headings other than the three section labels below.
 
-    Produce exactly three sections, each a bold label followed by the content:
+    Produce exactly three sections, each a bold label on its own line followed by \
+    "- " bullet points:
     *What I did since yesterday*
     *What I'll do today*
     *Anything blocking my progress*
 
     CRITICAL — use ONLY the tasks given to you. Never invent, assume, or pad with \
-    tasks, progress, or blockers that are not in the input. Rephrasing the given \
-    tasks is fine; adding anything new is not.
+    tasks, progress, or blockers that are not in the input. Rephrasing is fine; \
+    adding new items is not.
 
-    Rules:
-    - Write each section as a few short, natural sentences in the first person — NOT a \
-      bullet list of every task. Summarize and group; don't enumerate one bullet per task.
-    - Do NOT mention task categories or labels.
-    - Add a nested "- " sub-bullet ONLY when a task description carries an extra detail \
-      worth calling out; otherwise add no sub-bullets at all.
-    - Mention finished work as done (a ✅ is fine); keep it tight, no fluff.
-    - If a section's input says "(nothing logged)", write exactly "Nothing" for that \
-      section — do not fabricate items to fill it.
-    - For blockers, mention one only if a task description clearly states a blocker; \
-      otherwise write "None".
+    Formatting:
+    - One "- " bullet per task, leading with a verb, e.g. "- Fixed the login flow".
+    - Mark finished work with a ✅ at the end of its bullet.
+
+    Descriptions (a line may include "| description: ...") — these carry the real \
+    context, USE THEM:
+    - Let the description shape the main bullet's wording. The title is often terse; \
+      the description usually says what actually matters. Prefer a specific, \
+      informative bullet drawn from the description over a vague restatement of the title.
+    - For today's tasks, use the description to define what you'll actually work on.
+    - For yesterday's tasks, use it to add the concrete detail of what you did.
+    - Add a nested "- " sub-bullet when the description holds a distinct extra point \
+      (a caveat, a follow-up, a finding) that doesn't fit cleanly in the main bullet; \
+      otherwise fold it into the main bullet and add no sub-bullet.
+    - Never print the literal text "| description:" — it is an input marker only.
+
+    Categories (each input line is tagged with its category in [brackets] FOR YOUR \
+    REFERENCE ONLY — never print the bracket or the category name):
+    - For [CS] tasks, generalize: drop personal names and phrase as customer-support \
+      work. Example: "Support Bradon on the billing bug" → "Support CS on billing \
+      related issues".
+
+    What to leave out:
+    - Skip trivial throwaway tasks that aren't real work updates — e.g. \
+      "tell/ask/ping/message someone something", quick chats, personal admin. Omit \
+      them entirely rather than listing them.
+
+    Empty sections:
+    - If a section's input is "(nothing logged)", or every item in it was skipped, \
+      write exactly "- Nothing".
+    - For blockers, include one only if a description clearly states a blocker; \
+      otherwise write "- None".
     """
 
     private static func userPrompt(
@@ -193,16 +215,21 @@ struct DailyReportService {
 
         return workEvents.map { event in
             let title = TaskTitleFormatter.displayTitle(for: event.title)
+            let category = TaskTitleFormatter.category(for: event.title)?.rawValue
             let done = includeDoneMarker && TaskTitleFormatter.isDone(event.title)
 
-            var line = "- \(title)"
+            var line = "- "
+            if let category {
+                line += "[\(category)] "
+            }
+            line += title
             if done {
                 line += " (done)"
             }
             if let notes = event.notes?.trimmingCharacters(in: .whitespacesAndNewlines),
                !notes.isEmpty {
                 let oneLine = notes.replacingOccurrences(of: "\n", with: " ")
-                line += " — \(oneLine)"
+                line += " | description: \(oneLine)"
             }
             return line
         }
