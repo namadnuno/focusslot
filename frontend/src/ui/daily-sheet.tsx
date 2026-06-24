@@ -21,12 +21,16 @@ export function DailySheet({
   report,
   isGenerating,
   onClose,
-  onRegenerate
+  onRegenerate,
+  title = "Daily update",
+  loadingLabel = "Generating your daily…"
 }: {
   report: DailyReport | null;
   isGenerating: boolean;
   onClose: () => void;
   onRegenerate: () => void;
+  title?: string;
+  loadingLabel?: string;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -52,7 +56,7 @@ export function DailySheet({
             <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary/10 text-primary">
               <Sparkles className="h-4 w-4" />
             </span>
-            Daily update
+            {title}
           </SheetTitle>
           <SheetDescription className="sr-only">
             AI-generated standup update from your tasks.
@@ -64,7 +68,7 @@ export function DailySheet({
             <div className="grid min-h-64 place-items-center rounded-md border border-dashed">
               <div className="flex flex-col items-center gap-3 text-muted-foreground">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <p className="text-sm">Generating your daily…</p>
+                <p className="text-sm">{loadingLabel}</p>
               </div>
             </div>
           ) : (

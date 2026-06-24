@@ -344,21 +344,63 @@ final class CalendarController: ObservableObject {
     /// Used by the daily generator, which inspects other days (yesterday/today)
     /// without disturbing the day the user is currently viewing.
     func fetchTaskEvents(on date: Date, settings: SchedulingSettings) -> [CalendarEvent] {
-        guard accessState == .granted else { return [] }
+        fetchEvents(on: date, settings: settings).tasks
+    }
+
+    /// Non-mutating fetch of a day split into task events (managed by FocusSlot)
+    /// and fixed/busy events (everything else, plus tasks on other calendars).
+    func fetchEvents(on date: Date, settings: SchedulingSettings) -> (tasks: [CalendarEvent], fixed: [CalendarEvent]) {
+        guard accessState == .granted else { return ([], []) }
 
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: date)
         let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? date
         let predicate = eventStore.predicateForEvents(withStart: startOfDay, end: endOfDay, calendars: nil)
+        let events = eventStore.events(matching: predicate).map(Self.calendarEvent)
         let taskCalendarID = selectedCalendar(settings: settings)?.calendarIdentifier
 
-        return eventStore.events(matching: predicate)
-            .map(Self.calendarEvent)
+        let tasks = events
             .filter {
                 TaskTitleFormatter.isTaskTitle($0.title) &&
                     (taskCalendarID == nil || $0.calendarIdentifier == taskCalendarID)
             }
             .sorted { $0.startDate < $1.startDate }
+
+        let fixed = events
+            .filter {
+                !TaskTitleFormatter.isTaskTitle($0.title) ||
+                    (taskCalendarID != nil && $0.calendarIdentifier != taskCalendarID)
+            }
+            .sorted { $0.startDate < $1.startDate }
+
+        return (tasks, fixed)
+    }
+
+    /// Moves the given task events to new start times, preserving each task's duration.
+    /// Returns the number of events actually moved, then reloads the selected day.
+    @discardableResult
+    func applySchedule(
+        _ moves: [(id: String, start: Date)],
+        selectedDate: Date,
+        settings: SchedulingSettings
+    ) async throws -> Int {
+        var moved = 0
+        for move in moves {
+            guard let event = eventStore.event(withIdentifier: move.id) else { continue }
+            let duration = event.endDate.timeIntervalSince(event.startDate)
+            event.startDate = move.start
+            event.endDate = move.start.addingTimeInterval(duration)
+            // Relative alarms move with the event automatically.
+            try eventStore.save(event, span: .thisEvent, commit: false)
+            moved += 1
+        }
+
+        if moved > 0 {
+            try eventStore.commit()
+        }
+
+        await loadEvents(for: selectedDate, settings: settings)
+        return moved
     }
 
     /// Trims notes and collapses empty strings to nil so EventKit clears the field.

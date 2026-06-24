@@ -181,6 +181,9 @@ final class WebPopoverViewController: NSViewController, WKScriptMessageHandler {
                     completionTokens: report.completionTokens,
                     costUSD: report.costUSD
                 ))
+            case "organizeSchedule":
+                let request = try decode(SelectedDatePayload.self, from: payload)
+                try await organizeSchedule(id: id, selectedDate: request.selectedDate)
             case "openCalendarSettings":
                 openCalendarSettings()
                 try sendSuccess(id: id, result: EmptyResult())
@@ -192,6 +195,137 @@ final class WebPopoverViewController: NSViewController, WKScriptMessageHandler {
             FocusSlotLogger.log("Native command failed: \(type) - \(error.localizedDescription)")
             sendFailure(id: id, error: error.localizedDescription)
         }
+    }
+
+    @MainActor
+    private func organizeSchedule(id: String, selectedDate: Date) async throws {
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: selectedDate)
+        let isToday = calendar.isDateInToday(selectedDate)
+        let now = Date()
+
+        let (tasks, fixed) = calendarController.fetchEvents(on: selectedDate, settings: settingsStore.settings)
+
+        // For today, only the not-yet-started tasks are movable; done and in-progress
+        // tasks stay put. For future days, every (not-done) task is movable.
+        let movable = tasks.filter {
+            !TaskTitleFormatter.isDone($0.title) && (!isToday || $0.startDate > now)
+        }
+
+        guard !movable.isEmpty else {
+            try sendSuccess(id: id, result: OrganizeResult(
+                state: appState(selectedDate: selectedDate),
+                summary: "No upcoming tasks to organize on this day.",
+                model: "",
+                promptTokens: 0,
+                completionTokens: 0,
+                costUSD: nil,
+                movedCount: 0
+            ))
+            return
+        }
+
+        // Everything that must not be overlapped: real events plus the tasks we're not
+        // moving (done / in-progress). All-day events would block the whole day, so skip them.
+        let movableIDs = Set(movable.map(\.id))
+        let anchoredTasks = tasks.filter { !movableIDs.contains($0.id) }
+        let busyEvents = (fixed + anchoredTasks).filter { !$0.isAllDay }
+
+        let result = try await DailyReportService().organize(
+            movable: movable,
+            busy: busyEvents,
+            now: isToday ? now : nil,
+            dayStart: dayStart,
+            settings: settingsStore.settings
+        )
+
+        let durations = Dictionary(uniqueKeysWithValues: movable.map {
+            ($0.id, $0.endDate.timeIntervalSince($0.startDate))
+        })
+        var busyIntervals = busyEvents.map { DateInterval(start: $0.startDate, end: $0.endDate) }
+        if isToday {
+            busyIntervals.append(DateInterval(start: dayStart, end: now))
+        }
+
+        let accepted = Self.validateMoves(result.items, durations: durations, busy: busyIntervals)
+        let movedCount = try await calendarController.applySchedule(
+            accepted,
+            selectedDate: selectedDate,
+            settings: settingsStore.settings
+        )
+
+        let summary = Self.scheduleSummary(accepted: accepted, movable: movable)
+
+        try sendSuccess(id: id, result: OrganizeResult(
+            state: appState(selectedDate: selectedDate),
+            summary: summary,
+            model: result.model,
+            promptTokens: result.promptTokens,
+            completionTokens: result.completionTokens,
+            costUSD: result.costUSD,
+            movedCount: movedCount
+        ))
+    }
+
+    /// Keeps only the proposed moves that don't clash with a busy interval or with an
+    /// already-accepted move. Earlier start times win; the rest are dropped (left in place).
+    private static func validateMoves(
+        _ items: [(id: String, start: Date)],
+        durations: [String: TimeInterval],
+        busy: [DateInterval]
+    ) -> [(id: String, start: Date)] {
+        var accepted: [(id: String, start: Date)] = []
+        var acceptedIntervals: [DateInterval] = []
+
+        for item in items.sorted(by: { $0.start < $1.start }) {
+            guard let duration = durations[item.id] else { continue }
+            let interval = DateInterval(start: item.start, end: item.start.addingTimeInterval(duration))
+
+            let clashesBusy = busy.contains { $0.intersects(interval) }
+            let clashesAccepted = acceptedIntervals.contains { $0.intersects(interval) }
+            if clashesBusy || clashesAccepted { continue }
+
+            accepted.append(item)
+            acceptedIntervals.append(interval)
+        }
+
+        return accepted
+    }
+
+    private static func scheduleSummary(
+        accepted: [(id: String, start: Date)],
+        movable: [CalendarEvent]
+    ) -> String {
+        let clock = DateFormatter()
+        clock.dateFormat = "HH:mm"
+
+        func title(for id: String) -> String {
+            movable.first { $0.id == id }
+                .map { TaskTitleFormatter.displayTitle(for: $0.title) } ?? "Task"
+        }
+
+        let acceptedIDs = Set(accepted.map(\.id))
+        let movedLines = accepted
+            .sorted { $0.start < $1.start }
+            .map { "- \(clock.string(from: $0.start))  \(title(for: $0.id))" }
+
+        let untouched = movable
+            .filter { !acceptedIDs.contains($0.id) }
+            .map { "- \(TaskTitleFormatter.displayTitle(for: $0.title))" }
+
+        var lines: [String] = []
+        if movedLines.isEmpty {
+            lines.append("No tasks could be placed without clashing with your calendar.")
+        } else {
+            lines.append("Organized schedule:")
+            lines.append(contentsOf: movedLines)
+        }
+        if !untouched.isEmpty {
+            lines.append("")
+            lines.append("Left in place (no clash-free slot found):")
+            lines.append(contentsOf: untouched)
+        }
+        return lines.joined(separator: "\n")
     }
 
     @MainActor

@@ -74,6 +74,8 @@ export function useFocusSlot() {
   const [isCustomDateOpen, setIsCustomDateOpen] = useState(false);
   const [daily, setDaily] = useState<DailyReport | null>(null);
   const [isGeneratingDaily, setIsGeneratingDaily] = useState(false);
+  const [organizeReport, setOrganizeReport] = useState<DailyReport | null>(null);
+  const [isOrganizing, setIsOrganizing] = useState(false);
 
   const selectedDateISO = useMemo(() => startOfLocalDayISO(selectedDate), [selectedDate]);
 
@@ -251,6 +253,42 @@ export function useFocusSlot() {
     }
   }
 
+  async function organizeSchedule() {
+    setIsOrganizing(true);
+    setStatus(null);
+    try {
+      const result = await sendNative<
+        { selectedDate: string },
+        {
+          state: AppState;
+          summary: string;
+          model: string;
+          promptTokens: number;
+          completionTokens: number;
+          costUSD: number | null;
+          movedCount: number;
+        }
+      >("organizeSchedule", { selectedDate: selectedDateISO });
+
+      setState(result.state);
+      setOrganizeReport({
+        text: result.summary,
+        model: result.model,
+        promptTokens: result.promptTokens,
+        completionTokens: result.completionTokens,
+        costUSD: result.costUSD
+      });
+      setStatus({
+        text: result.movedCount > 0 ? `Reorganized ${result.movedCount} task(s)` : "Schedule reviewed",
+        tone: "success"
+      });
+    } catch (error) {
+      setStatus({ text: error instanceof Error ? error.message : String(error), tone: "error" });
+    } finally {
+      setIsOrganizing(false);
+    }
+  }
+
   function selectDate(nextDate: Date, nextFilter = filterForDate(nextDate)) {
     setSelectedDate(nextDate);
     setDayFilter(nextFilter);
@@ -322,6 +360,10 @@ export function useFocusSlot() {
     generateDaily,
     daily,
     setDaily,
-    isGeneratingDaily
+    isGeneratingDaily,
+    organizeSchedule,
+    organizeReport,
+    setOrganizeReport,
+    isOrganizing
   };
 }

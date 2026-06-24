@@ -1,4 +1,4 @@
-import { ArrowRight, CalendarClock, Check, Edit3, Plus, Settings, Sparkles } from "lucide-react";
+import { ArrowRight, CalendarClock, Check, Edit3, Plus, Settings, Sparkles, Wand2 } from "lucide-react";
 import { useFocusSlot } from "@/lib/use-focus-slot";
 import type { TaskFilter } from "@/lib/use-focus-slot";
 import { formatDate } from "@/lib/utils";
@@ -65,7 +65,11 @@ export function App() {
     generateDaily,
     daily,
     setDaily,
-    isGeneratingDaily
+    isGeneratingDaily,
+    organizeSchedule,
+    organizeReport,
+    setOrganizeReport,
+    isOrganizing
   } = focusSlot;
 
   if (!state) {
@@ -91,6 +95,15 @@ export function App() {
           </div>
           <Button
             className="ml-auto"
+            aria-label="Organize schedule with AI"
+            size="icon"
+            variant="secondary"
+            disabled={isOrganizing}
+            onClick={organizeSchedule}
+          >
+            <Wand2 className={`h-4 w-4 ${isOrganizing ? "animate-pulse" : ""}`} />
+          </Button>
+          <Button
             aria-label="Generate daily update"
             size="icon"
             variant="secondary"
@@ -270,6 +283,15 @@ export function App() {
         isGenerating={isGeneratingDaily}
         onClose={() => setDaily(null)}
         onRegenerate={generateDaily}
+      />
+
+      <DailySheet
+        report={organizeReport}
+        isGenerating={isOrganizing}
+        onClose={() => setOrganizeReport(null)}
+        onRegenerate={organizeSchedule}
+        title="Organize schedule"
+        loadingLabel="Organizing your schedule…"
       />
     </Shell>
   );

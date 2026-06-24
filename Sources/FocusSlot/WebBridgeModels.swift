@@ -121,6 +121,16 @@ struct GenerateDailyResult: Encodable {
     let costUSD: Double?
 }
 
+struct OrganizeResult: Encodable {
+    let state: WebAppState
+    let summary: String
+    let model: String
+    let promptTokens: Int
+    let completionTokens: Int
+    let costUSD: Double?
+    let movedCount: Int
+}
+
 struct EventActionPayload: Decodable {
     let eventID: String
     let selectedDate: Date
